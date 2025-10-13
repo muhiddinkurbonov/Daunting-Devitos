@@ -1,11 +1,13 @@
-using Serilog;
+using System.Text;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using System.Text;
-
 using Project.Data;
 using Project.Repositories;
 using Project.Services;
+using Serilog;
+
+namespace Project.Api;
+
 public class Program
 {
     public static void Main(string[] args)
@@ -23,8 +25,6 @@ public class Program
         builder.Services.AddOpenApi();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
-
-
 
         //Auto Mapper
         builder.Services.AddAutoMapper(typeof(Program));
