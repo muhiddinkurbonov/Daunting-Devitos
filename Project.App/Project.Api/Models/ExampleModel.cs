@@ -4,8 +4,5 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Project.Models
 {
-    public class ExampleModel
-    {
-        
-    }
+    public class ExampleModel { }
 }

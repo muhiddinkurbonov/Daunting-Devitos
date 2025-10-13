@@ -5,10 +5,8 @@ using Project.Models;
 
 namespace Project.Data
 {
-    public class MappingProfile: Profile{
-        public MappingProfile()
-        {
-            
-        }
+    public class MappingProfile : Profile
+    {
+        public MappingProfile() { }
     }
 }

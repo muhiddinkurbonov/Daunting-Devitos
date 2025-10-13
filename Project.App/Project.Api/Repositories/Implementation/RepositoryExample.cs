@@ -1,11 +1,8 @@
-using Project.Models;
-using Project.Data;
 using Microsoft.EntityFrameworkCore;
+using Project.Data;
+using Project.Models;
 
 namespace Project.Repositories
 {
-    public class RepositoryExample : IRepositoryExample
-    {
-        
-    }
+    public class RepositoryExample : IRepositoryExample { }
 }

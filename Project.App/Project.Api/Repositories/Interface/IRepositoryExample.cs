@@ -2,8 +2,5 @@ using Project.Models;
 
 namespace Project.Repositories
 {
-    public interface IRepositoryExample
-    {
-        
-    }
+    public interface IRepositoryExample { }
 }
