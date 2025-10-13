@@ -38,9 +38,9 @@ jobs:
 
     # --- Build Frontend ---
     - name: Install frontend dependencies
-      working-directory: Project.Client
+      working-directory: ./Project.App/Project.Client
       run: npm install
 
     - name: Build frontend
-      working-directory: Project.Client
+      working-directory: ./Project.App/Project.Client
       run: npm run build
