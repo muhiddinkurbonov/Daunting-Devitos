@@ -34,6 +34,8 @@ jobs:
     - name: Check backend formatting
       id: backend_format_check
       run: |
+        dotnet tool restore
+        
         set +e # temporarily disable 'exit on error'
         OUTPUT=$(dotnet csharpier check . 2>&1)
         EXIT_CODE=$?
