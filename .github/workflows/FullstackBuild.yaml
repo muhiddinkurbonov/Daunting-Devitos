@@ -22,13 +22,13 @@ jobs:
 
     # --- Build Backend ---
     - name: Restore backend dependencies
-      run: dotnet restore Project.Api/Project.Api.csproj
+      run: dotnet restore ./Project.App/Project.Api/Project.Api.csproj
 
     - name: Build backend
-      run: dotnet build Project.Api/Project.Api.csproj --no-restore
+      run: dotnet build ./Project.App/Project.Api/Project.Api.csproj --no-restore
 
     - name: Test backend
-      run: dotnet test Project.Test/Project.Test.csproj --no-build --verbosity normal
+      run: dotnet test ./Project.App/Project.Test/Project.Test.csproj --no-build --verbosity normal
 
     # --- Set up Node.js ---
     - name: Setup Node.js
