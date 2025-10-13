@@ -1,12 +1,10 @@
-﻿using Xunit;
-using Moq;
-using Microsoft.Extensions.Logging;
+﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using AutoMapper;
+using Microsoft.Extensions.Logging;
+using Moq;
+using Xunit;
+
 namespace Project.Test
 {
-    public class exampleTests
-    {
-
-    }
+    public class ExampleTests { }
 }
