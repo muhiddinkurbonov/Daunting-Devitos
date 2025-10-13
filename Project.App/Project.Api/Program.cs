@@ -1,10 +1,11 @@
 using System.Text;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
+using System.Text;
 
-namespace Project.Api;
-
+using Project.Data;
+using Project.Repositories;
+using Project.Services;
 public class Program
 {
     public static void Main(string[] args)
