@@ -2,6 +2,10 @@ using Serilog;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
+
+using Project.Data;
+using Project.Repositories;
+using Project.Services;
 public class Program
 {
     public static void Main(string[] args)
