@@ -1,0 +1,46 @@
+name: Fullstack Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    # --- Set up .NET ---
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    # --- Build Backend ---
+    - name: Restore backend dependencies
+      run: dotnet restore Project.Api/Project.Api.csproj
+
+    - name: Build backend
+      run: dotnet build Project.Api/Project.Api.csproj --no-restore
+
+    - name: Test backend
+      run: dotnet test Project.Test/Project.Test.csproj --no-build --verbosity normal
+
+    # --- Set up Node.js ---
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 24.10.0
+
+    # --- Build Frontend ---
+    - name: Install frontend dependencies
+      working-directory: Project.Client
+      run: npm install
+
+    - name: Build frontend
+      working-directory: Project.Client
+      run: npm run build
