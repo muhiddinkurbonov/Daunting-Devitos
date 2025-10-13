@@ -5,15 +5,28 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "lint:oxlint": "oxlint . -D correctness --ignore-path .gitignore",
+    "lint:oxlint:fix": "oxlint . --fix -D correctness --ignore-path .gitignore",
+    "lint:eslint": "eslint .",
+    "lint:eslint:fix": "eslint . --fix",
+    "lint": "run-s lint:*",
+    "lint-fix": "run-s lint:*:fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
+    "next": "15.5.5",
     "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "next": "15.5.5"
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "eslint": "^9.37.0",
+    "eslint-plugin-oxlint": "^1.23.0",
+    "npm-run-all2": "^8.0.4",
+    "oxlint": "^1.23.0",
+    "prettier": "^3.6.2",
     "tailwindcss": "^4"
   }
 }
