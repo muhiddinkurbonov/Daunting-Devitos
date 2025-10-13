@@ -1,0 +1,4 @@
+# .csharpierignore
+**/Migrations
+*.csproj
+*.sln
