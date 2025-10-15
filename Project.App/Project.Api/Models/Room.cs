@@ -1,10 +1,11 @@
 namespace Project.Api.Models;
+
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 public class Room
 {
-    [Key] 
+    [Key]
     public Guid Id { get; set; }
 
     public Guid HostId { get; set; }
@@ -42,5 +43,4 @@ public class Room
     public virtual User? Host { get; set; }
 
     public virtual ICollection<RoomPlayer> RoomPlayers { get; set; } = [];
-
 }
