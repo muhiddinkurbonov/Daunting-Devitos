@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Project.Api.Services.Interface;
 
 /// <summary>
@@ -30,5 +32,7 @@ public interface IGameService<TState>
     /// Each game implementation provides their own main loop logic implementation, instead of being restricted to a
     /// specific structure.
     /// </summary>
-    Task<bool> PerformActionAsync(string gameId, string playerId, string action);
+    /// <param name="action">The action to perform</param>
+    /// <param name="data">A JSON object containing the action data</param>
+    Task<bool> PerformActionAsync(string gameId, string playerId, string action, JsonElement data);
 }

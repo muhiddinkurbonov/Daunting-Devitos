@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Project.Api.DTOs;
 using Project.Api.Services.Interface;
 
 namespace Project.Api.Services;
@@ -59,10 +61,10 @@ public record BlackjackDealingStage : BlackjackStage;
 
 // player turn
 // TODO: figure out how turn order will work
-public record BlackjackPlayerTurnStage(int Index) : BlackjackStage;
+public record BlackjackPlayerActionStage(int Index) : BlackjackStage;
 
 // dealer turn and distribute winnings
-public record BlackjackDealerTurnStage : BlackjackStage;
+public record BlackjackFinishRoundStage : BlackjackStage;
 
 // teardown, close room
 public record BlackjackTeardownStage : BlackjackStage;
@@ -76,8 +78,33 @@ public class BlackjackService : IBlackjackService
         throw new NotImplementedException();
     }
 
-    public Task<bool> PerformActionAsync(string gameId, string playerId, string action)
+    public Task<bool> PerformActionAsync(
+        string gameId,
+        string playerId,
+        string action,
+        JsonElement data
+    )
     {
+        BlackjackActionDTO actionDTO = data.ToBlackjackAction(action);
+
+        switch (actionDTO)
+        {
+            case BetAction betAction:
+                throw new NotImplementedException();
+            case HitAction hitAction:
+                throw new NotImplementedException();
+            case StandAction standAction:
+                throw new NotImplementedException();
+            case DoubleAction doubleAction:
+                throw new NotImplementedException();
+            case SplitAction splitAction:
+                throw new NotImplementedException();
+            case SurrenderAction surrenderAction:
+                throw new NotImplementedException();
+            default:
+                throw new NotImplementedException();
+        }
+
         throw new NotImplementedException();
     }
 }
