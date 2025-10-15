@@ -23,7 +23,6 @@ public class Room
     [MaxLength(50)]
     public required string GameMode { get; set; }
 
-    [MaxLength(50)]
     public required string GameState { get; set; }
 
     [MaxLength(500)]
