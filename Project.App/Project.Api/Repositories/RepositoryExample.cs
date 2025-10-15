@@ -4,5 +4,5 @@ using Project.Api.Models;
 
 namespace Project.Api.Repositories
 {
-    public class RepositoryExample : IRepositoryExample { }
+    public class IRepositoryExample { }
 }

@@ -3,7 +3,7 @@ namespace Project.Api.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-public class RoomPlayer
+namespace Project.Api.Models
 {
     [Key]
     public long Id { get; set; }
