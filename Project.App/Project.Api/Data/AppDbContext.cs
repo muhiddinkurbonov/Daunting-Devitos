@@ -14,7 +14,6 @@ public partial class AppDbContext : DbContext
     public DbSet<Room> Rooms { get; set; }
     public DbSet<RoomPlayer> RoomPlayers { get; set; }
     public DbSet<Hand> Hands { get; set; }
-    
 
     /// <summary>
     /// Provides the configuration for TradeHubContext models.

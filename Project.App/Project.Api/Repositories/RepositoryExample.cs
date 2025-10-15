@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Project.Data;
 using Project.Api.Models;
+using Project.Data;
 
 namespace Project.Api.Repositories
 {
