@@ -4,18 +4,6 @@ This guide covers the full workflow for local database setup, Git branching, and
 
 ---
 
-## 1. Initial Local Database Setup
-
-First-time setup for your local database.
-
-### How to add Connection String:
-
-Run this command in the project's root directory. Replace `<password>` with your actual SQL Server 'sa' password.
-
-```bash
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=127.0.0.1,1433;Database=budgetbay_local;User Id=sa;Password=<password>;TrustServerCertificate=True;"
-```
-
 ### Apply All Existing Migrations:
 
 Create the database and apply all existing migrations.
