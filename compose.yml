@@ -6,14 +6,14 @@ services:
     ports:
       - 8080:3000
   
-  # backend:
-  #   build:
-  #     context: ./Project.App/Project.Api
-  #   environment:
-  #     # binds to ConnectionStrings:DefaultConnection
-  #     - ConnectionStrings__DefaultConnection=Server=db;Database=DevitoDB;User Id=SA;Password=ThisIsTheBestPassword!!1!;TrustServerCertificate=True;
-  #   ports:
-  #     - 5131:5131
+  backend:
+    build:
+      context: ./Project.App/Project.Api
+    environment:
+      # binds to ConnectionStrings:DefaultConnection
+      - ConnectionStrings__DefaultConnection=Server=db;Database=DevitoDB;User Id=SA;Password=ThisIsTheBestPassword!!1!;TrustServerCertificate=True;
+    ports:
+      - 5131:5131
 
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
