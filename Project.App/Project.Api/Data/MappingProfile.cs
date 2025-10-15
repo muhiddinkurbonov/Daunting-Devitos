@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using AutoMapper;
 using Project.DTOs;
-using Project.Models;
+using Project.Api.Models;
 
 namespace Project.Data
 {

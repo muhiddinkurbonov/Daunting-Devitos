@@ -1,4 +1,4 @@
-using Project.Models;
+using Project.Api.Models;
 
 namespace Project.Repositories
 {

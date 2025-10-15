@@ -8,12 +8,15 @@ namespace Project.Api.Models
     {
         [Key]
         public int Id {get; set;}
-        [Required, MaxLength(50)]
+        [Required, MaxLength(256)]
         public string Name { get; set;} = null!;
-        [Required, MaxLength(255)]
+        [Required, MaxLength(256)]
         public string Email {get; set;} = null!;
-        [Required]
+        [Required, MaxLength(256)]
         public string PasswordHash {get; set;} = null!;
-        public int Balance {get; set;} = 0;
+        public double Balance { get; set; } = 1000;
+
+        public ICollection<RoomPlayer> RoomPlayers { get; set; } = new List<RoomPlayer>();
+        
     }
 }
