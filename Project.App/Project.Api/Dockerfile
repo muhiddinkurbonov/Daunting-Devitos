@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS builder
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 
 # set working directory
 WORKDIR /src
@@ -14,13 +14,13 @@ COPY . .
 # build (publish)
 RUN dotnet publish -c Release -o /app/publish --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runner
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS run
 
 # set working directory
 WORKDIR /app
 
-# copy built files from builder
-COPY --from=builder /app/publish .
+# copy built files from build
+COPY --from=build /app/publish .
 
 # run! hopefully.
 ENTRYPOINT ["dotnet", "Project.Api.dll"]

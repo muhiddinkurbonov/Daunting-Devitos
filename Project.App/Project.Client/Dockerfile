@@ -1,4 +1,4 @@
-FROM node:24-alpine AS builder
+FROM node:24-alpine AS build
 
 # set working directory
 WORKDIR /src
@@ -13,15 +13,15 @@ COPY . .
 # build
 RUN npm run build
 
-FROM node:24-alpine AS runner
+FROM node:24-alpine AS run
 
 # set working directory
 WORKDIR /app
 
-# copy built files from builder
-COPY --from=builder /src/.next ./.next
+# copy built files from build
+COPY --from=build /src/.next ./.next
 # copy static files
-COPY --from=builder /src/public ./public 
+COPY --from=build /src/public ./public 
 
 # install dependencies (without dev deps)
 COPY package.json package-lock.json ./
