@@ -12,5 +12,4 @@ public class RoomPlayer
     public long UserId { get; set; }
     [Required]
     public PlayerRole Role { get; set; }
-    public
 }
