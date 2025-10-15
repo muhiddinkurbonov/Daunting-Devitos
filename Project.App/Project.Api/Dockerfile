@@ -22,5 +22,8 @@ WORKDIR /app
 # copy built files from build
 COPY --from=build /app/publish .
 
+# according to richard this does nothing :/
+EXPOSE 5131
+
 # run! hopefully.
 ENTRYPOINT ["dotnet", "Project.Api.dll"]
