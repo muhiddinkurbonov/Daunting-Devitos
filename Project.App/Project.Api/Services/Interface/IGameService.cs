@@ -1,72 +1,34 @@
 namespace Project.Api.Services.Interface;
 
-//
-// start -> pre-game -> ||: pre-round -> | player turn (foreach player) | -> post-round :|| -> post-game
-//
+/// <summary>
+/// Used to represent the current state of a game.
+/// Each game should have their own "parent" abstract class that extends this class to ensure type safety.
+/// </summary>
+public abstract record GameStage;
 
-public enum GameStage
+/// <summary>
+/// Represents the current state of a game, including all relevant information.
+/// Can be extended to include more information for a specific game type.
+/// </summary>
+public record GameState<TStage>
+    where TStage : GameStage
 {
-    PreGame,
-    PreRound,
-    PlayerTurn,
-    PostRound,
-    PostGame,
+    public required TStage CurrentStage { get; set; }
 }
 
-public record GameState
+/// <summary>
+/// A service for handling game logic.
+/// Actions are async and stateless, so for each request, the service needs to get the current game state and
+/// act accordingly, either by updating the game state or returning an error.
+/// </summary>
+public interface IGameService<TState>
 {
-    public GameStage Stage { get; set; }
-}
+    Task<TState> GetGamestateAsync(string gameId);
 
-public interface IGameService
-{
-    Task<bool> DoPreGameAsync();
-    Task<bool> DoPreRoundAsync();
-    Task<bool> DoPlayerTurnAsync();
-    Task<bool> DoPostRoundAsync();
-    Task<bool> DoPostGameAsync();
-
-    Task<GameState> GetGamestateAsync(string gameId);
-
-    // async Task<GameState> GetGamestateAsync(string gameId)
-    // {
-    //     return _gameRepository.GetGamestateAsync(gameId);
-    // }
-
-    async Task<bool> DoGameActionAsync(string gameId, string playerId, string action)
-    {
-        GameState gamestate = await GetGamestateAsync(gameId);
-        return gamestate.Stage switch
-        {
-            GameStage.PreGame => await DoPreGameAsync(),
-            GameStage.PreRound => await DoPreRoundAsync(),
-            GameStage.PlayerTurn => await DoPlayerTurnAsync(),
-            GameStage.PostRound => await DoPostRoundAsync(),
-            GameStage.PostGame => await DoPostGameAsync(),
-            _ => throw new Exception("Unknown game stage"),
-        };
-    }
-
-    // if this was not distributed, this is how it would work
-    // BUT gamestate is tracked in the database, so it needs to be able to load the gamestate at any point
-    // async Task MainLoopAsync()
-    // {
-    //     await DoPreGameAsync();
-
-    //     // main loop
-    //     bool isRunning = true;
-    //     while (isRunning)
-    //     {
-    //         await DoPreRoundAsync();
-
-    //         // TODO: foreach player
-    //         // {
-    //         //     await DoPlayerTurnAsync();
-    //         // }
-
-    //         await DoPostRoundAsync();
-    //     }
-
-    //     await DoPostGameAsync();
-    // }
+    /// <summary>
+    /// Performs a user action on the game, if valid, then updates the game state.
+    /// Each game implementation provides their own main loop logic implementation, instead of being restricted to a
+    /// specific structure.
+    /// </summary>
+    Task<bool> PerformActionAsync(string gameId, string playerId, string action);
 }
