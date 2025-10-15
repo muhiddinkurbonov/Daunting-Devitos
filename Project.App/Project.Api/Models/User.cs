@@ -16,7 +16,7 @@ namespace Project.Api.Models
         public string PasswordHash {get; set;} = null!;
         public double Balance { get; set; } = 1000;
 
-        public ICollection<RoomPlayer> RoomPlayers { get; set; } = new List<RoomPlayers>();
+        public ICollection<RoomPlayer> RoomPlayers { get; set; } = new List<RoomPlayer>();
         
     }
 }
