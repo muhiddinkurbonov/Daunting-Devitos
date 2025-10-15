@@ -1,6 +1,6 @@
-using Project.Models;
+using Project.Api.Models;
 
-namespace Project.Repositories
+namespace Project.Api.Repositories
 {
     public interface IRepositoryExample { }
 }

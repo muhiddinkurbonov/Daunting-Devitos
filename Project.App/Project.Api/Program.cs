@@ -1,9 +1,9 @@
 using System.Text;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using Project.Data;
-using Project.Repositories;
-using Project.Services;
+using Project.Api.Data;
+using Project.Api.Repositories;
+using Project.Api.Services;
 using Serilog;
 
 namespace Project.Api;
