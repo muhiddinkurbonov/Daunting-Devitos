@@ -3,8 +3,5 @@ using Project.Repositories;
 
 namespace Project.Services
 {
-    public class ServiceExample : IServiceExample
-    {
-        
-    }
+    public class ServiceExample : IServiceExample { }
 }
