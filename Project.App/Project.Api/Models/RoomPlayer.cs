@@ -10,7 +10,5 @@ public class RoomPlayer
     public Guid RoomId { get; set; }
     [Required]
     public long UserId { get; set; }
-    [Required]
-    public PlayerRole Role { get; set; }
-    public
+ 
 }
