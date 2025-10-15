@@ -14,7 +14,11 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        builder.Configuration.AddJsonFile("adminsetting.json", optional: true, reloadOnChange: true);
+        builder.Configuration.AddJsonFile(
+            "adminsetting.json",
+            optional: true,
+            reloadOnChange: true
+        );
 
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
@@ -35,17 +39,20 @@ public class Program
 
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-        builder.Services.AddDbContext<AppDbContext>(
-            options => options.UseSqlServer(connectionString)
+        builder.Services.AddDbContext<AppDbContext>(options =>
+            options.UseSqlServer(connectionString)
         );
 
         var app = builder.Build();
 
-        app.MapGet("/string", () =>
-        {
-            var CS = builder.Configuration.GetConnectionString("DefaultConnection");
-            return Results.Ok(CS);
-        });
+        app.MapGet(
+            "/string",
+            () =>
+            {
+                var CS = builder.Configuration.GetConnectionString("DefaultConnection");
+                return Results.Ok(CS);
+            }
+        );
 
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
@@ -59,8 +66,6 @@ public class Program
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
-
-        
 
         app.Run();
     }
