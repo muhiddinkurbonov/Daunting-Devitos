@@ -1,0 +1,30 @@
+# for local development only!
+services:
+  frontend:
+    build:
+      context: ./Project.App/Project.Client
+    ports:
+      - 8080:3000
+  
+  # backend:
+  #   build:
+  #     context: ./Project.App/Project.Api
+  #   environment:
+  #     # binds to ConnectionStrings:DefaultConnection
+  #     - ConnectionStrings__DefaultConnection=Server=db;Database=DevitoDB;User Id=SA;Password=ThisIsTheBestPassword!!1!;TrustServerCertificate=True;
+  #   ports:
+  #     - 5131:5131
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: always
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=ThisIsTheBestPassword!!1!
+    ports: 
+      - 1433:1433
+    volumes:
+      - db_data:/var/opt/mssql
+
+volumes:
+  db_data: # persist database data
