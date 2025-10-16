@@ -6,7 +6,7 @@ namespace Project.Api.Repositories
 {
     public interface IHandRepository
     {
-        Task<Hand?> GetHandAsyncById(long handId);
+        Task<Hand?> GetHandAsyncById(Guid handId);
         Task<List<Hand>> GetHandsByRoomIdAsync(Guid roomId);
 
         Task<Hand> CreateHandAsync(Hand hand);

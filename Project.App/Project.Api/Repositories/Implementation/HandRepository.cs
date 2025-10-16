@@ -16,7 +16,7 @@ namespace Project.Api.Repositories
             _context = context;
         }
 
-        public async Task<Hand?> GetHandAsyncById(long handId)
+        public async Task<Hand?> GetHandAsyncById(Guid handId)
         {
             return await _context.Hands.FirstOrDefaultAsync(h => h.Id == handId);
         }
