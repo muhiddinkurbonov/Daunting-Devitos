@@ -50,7 +50,6 @@ jobs:
         id: check_overrides
         run: |
           COMMIT_MESSAGE=$(git log -1 --pretty=%B)
-          echo "Commit message: $COMMIT_MESSAGE"
 
           BACKEND_OVERRIDE=""
           FRONTEND_OVERRIDE=""
