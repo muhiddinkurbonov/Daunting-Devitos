@@ -2,7 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Numerics;
-using Project.Api.Enum;
+using Project.Api.Enums;
 
 namespace Project.Api.Models;
 
