@@ -1,5 +1,8 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Numerics;
+using Project.Api.Enum;
 
 namespace Project.Api.Models;
 
@@ -21,4 +24,12 @@ public class RoomPlayer
     public virtual User? User { get; set; }
 
     public virtual ICollection<Hand> Hands { get; set; } = [];
+
+    public Role Role { get; set; }
+
+    public Status Status { get; set; }
+    [Required]
+    public long Balance { get; set; }
+    
+    
 }
