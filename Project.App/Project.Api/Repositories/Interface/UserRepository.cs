@@ -36,12 +36,14 @@ namespace Project.Api.Repositories.Interface
             public async Task AddAsync(User user)
             {
                 await _context.Users.AddAsync(user);
+                await _context.SaveChangesAsync();
             }
 
             // Update existing user
             public async Task UpdateAsync(User user)
             {
                 _context.Users.Update(user);
+                await _context.SaveChangesAsync();
             }
 
             // Delete user by ID
@@ -52,6 +54,7 @@ namespace Project.Api.Repositories.Interface
                 {
                     _context.Users.Remove(user);
                 }
+                await _context.SaveChangesAsync();
             }
 
             //  Save changes
