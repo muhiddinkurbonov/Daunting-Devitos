@@ -9,7 +9,7 @@ public class Hand
     [Key]
     public long Id { get; set; }
 
-    public int RoomPlayerId { get; set; }
+    public long RoomPlayerId { get; set; }
 
     public int Order { get; set; }
 

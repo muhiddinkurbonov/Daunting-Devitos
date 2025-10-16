@@ -4,31 +4,32 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Numerics;
 using Project.Api.Enum;
 
-namespace Project.Api.Models
+namespace Project.Api.Models;
+
+public class RoomPlayer
 {
-    public class RoomPlayer
-    {
-        [Key]
-        public int Id { get; set; }
+    [Key]
+    public long Id { get; set; }
 
-        
-        [Required]
-        public Guid RoomId { get; set; }
-        // Navigation property for Room
-        [ForeignKey("RoomId")]
-        public Room? Room { get; set; }
-        
-        [Required]
-        public long UserId { get; set; }
-        // Navigation property for User
-        [ForeignKey("UserId")]
-        public User? User { get; set; }
+    [Required]
+    public Guid RoomId { get; set; }
 
-        public Role Role { get; set; }
+    [Required]
+    public int UserId { get; set; }
 
-        public Status Status { get; set; }
-        [Required]
-        public BigInteger Balance { get; set; }
-    }
+    [ForeignKey("RoomId")]
+    public virtual Room? Room { get; set; }
+
+    [ForeignKey("UserId")]
+    public virtual User? User { get; set; }
+
+    public virtual ICollection<Hand> Hands { get; set; } = [];
+
+    public Role Role { get; set; }
+
+    public Status Status { get; set; }
+    [Required]
+    public long Balance { get; set; }
+    
     
 }
