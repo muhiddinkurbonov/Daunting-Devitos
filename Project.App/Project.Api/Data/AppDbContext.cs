@@ -22,6 +22,10 @@ public partial class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // Configure GameState as JSON column for SQL Server
+        modelBuilder.Entity<Room>().Property(r => r.GameState).HasColumnType("nvarchar(max)");
+
         OnModelCreatingPartial(modelBuilder);
     }
 

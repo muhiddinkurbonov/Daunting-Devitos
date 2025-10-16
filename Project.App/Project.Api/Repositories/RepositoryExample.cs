@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Project.Api.Data;
 using Project.Api.Models;
-using Project.Data;
 
 namespace Project.Api.Repositories
 {
-    public class IRepositoryExample { }
+    public class RepositoryExample : IRepositoryExample { }
 }

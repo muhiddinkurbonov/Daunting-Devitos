@@ -1,6 +1,6 @@
 using Project.Api.Models;
 
-namespace Project.Services
+namespace Project.Api.Services
 {
     public interface IServiceExample { }
 }

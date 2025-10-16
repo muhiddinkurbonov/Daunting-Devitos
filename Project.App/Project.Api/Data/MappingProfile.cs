@@ -3,7 +3,7 @@ using AutoMapper;
 using Project.Api.Models;
 using Project.DTOs;
 
-namespace Project.Data
+namespace Project.Api.Data
 {
     public class MappingProfile : Profile
     {
