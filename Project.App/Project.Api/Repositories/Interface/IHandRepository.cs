@@ -15,6 +15,7 @@ namespace Project.Api.Repositories
         // Get a hand by its ID
         Task<Hand?> GetHandAsyncById(Guid handId);
         // Get all hands in a room
+
         Task<List<Hand>> GetHandsByRoomIdAsync(Guid roomId);
         // Get all hands by a user in a room
         Task<List<Hand>> GetHandsByUserIdAsync(Guid roomId, Guid userId);

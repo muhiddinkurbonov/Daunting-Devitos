@@ -19,7 +19,7 @@ namespace Project.Api.Repositories
         public HandRepository(AppDbContext context)
         {
             _context = context;
-        } 
+        }
         // Implement the methods
         // Get a hand by its ID
         public async Task<Hand?> GetHandAsyncById(Guid handId)
