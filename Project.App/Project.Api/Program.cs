@@ -2,6 +2,7 @@ using System.Text;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Project.Api.Data;
+using Project.Api.Middleware;
 using Project.Api.Repositories;
 using Project.Api.Services;
 using Serilog;
@@ -44,6 +45,8 @@ public class Program
         );
 
         var app = builder.Build();
+
+        app.UseMiddleware<GlobalExceptionHandler>();
 
         app.MapGet(
             "/string",
