@@ -1,9 +1,15 @@
+/*
+    Name: IHandService.cs
+    Description: Interface for Hand service
+    Children: HandService.cs
+*/
 using Project.Api.Models;
 
 namespace Project.Api.Services
 {
     public interface IHandService
     {
+        // Define Fields
         Task<List<Hand>> GetHandsByRoomIdAsync(Guid roomId);
 
         Task<Hand?> GetHandAsyncByIdAsync(Guid handId);
