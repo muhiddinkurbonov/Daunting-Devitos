@@ -15,10 +15,14 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }} # ignore warning, likely a false positive
       frontend: ${{ steps.filter.outputs.frontend }} # ignore warning, likely a false positive
+      backend_override: ${{ steps.check_overrides.outputs.backend_override }}
+      frontend_override: ${{ steps.check_overrides.outputs.frontend_override }}
     steps:
-      # only run specific build check if changes are detected
       - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+
+      # only run specific build check if changes are detected...
+      - name: Filter changed files
+        uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
@@ -31,10 +35,38 @@ jobs:
             frontend:
               - 'Project.App/Project.Client/**'
               - '.github/workflows/FullstackBuild.yaml'
+      
+      # ...or if there is a commit message override (force/skip)
+      # note that force overrides skip
+      - name: Check for commit message overrides
+        id: check_overrides
+        run: |
+          COMMIT_MESSAGE=${{ github.event.head_commit.message }}
+          BACKEND_OVERRIDE=""
+          FRONTEND_OVERRIDE=""
+
+          if [[ $COMMIT_MESSAGE == *"\[force backend\]"* ]]; then
+            BACKEND_OVERRIDE="force"
+          elif [[ $COMMIT_MESSAGE == *"\[skip backend\]"* ]]; then
+            BACKEND_OVERRIDE="skip"
+          fi
+
+          if [[ $COMMIT_MESSAGE == *"\[force frontend\]"* ]]; then
+            FRONTEND_OVERRIDE="force"
+          elif [[ $COMMIT_MESSAGE == *"\[skip frontend\]"* ]]; then
+            FRONTEND_OVERRIDE="skip"
+          fi
+
+          echo "backend_override=$BACKEND_OVERRIDE" >> $GITHUB_OUTPUT
+          echo "frontend_override=$FRONTEND_OVERRIDE" >> $GITHUB_OUTPUT
 
   backend:
     needs: changes
-    if: needs.changes.outputs.backend == 'true' || needs.changes.result != 'success'
+    if: | 
+      needs.changes.outputs.backend_override == 'force' || (
+        needs.changes.outputs.backend_override != 'skip' &&
+        needs.changes.outputs.backend == 'true' || needs.changes.result != 'success'
+      )
     runs-on: ubuntu-latest
     outputs:
       format_output: ${{ steps.backend_format_check.outputs.output }}
@@ -80,7 +112,11 @@ jobs:
 
   frontend:
     needs: changes
-    if: needs.changes.outputs.frontend == 'true' || needs.changes.result != 'success'
+    if: | 
+      needs.changes.outputs.frontend_override == 'force' || (
+        needs.changes.outputs.frontend_override != 'skip' &&
+        needs.changes.outputs.frontend == 'true' || needs.changes.result != 'success'
+      )
     runs-on: ubuntu-latest
     outputs:
       format_output: ${{ steps.frontend_format_check.outputs.output }}
@@ -136,7 +172,7 @@ jobs:
         fi
       continue-on-error: true
 
-  add-pr-comment:
+  add-formatting-warning-pr-comment:
     needs: [backend, frontend]
     # runs only if formatting checks fail
     # theoretically, if it does not build, *.outputs.outcome should not exist, and the condition should be false
@@ -168,8 +204,36 @@ jobs:
         fi
 
         if [ "$HAS_ISSUES" = true ]; then
-          echo "Commenting on PR #$PR_NUMBER"
+          echo "Commenting on PR #$PR_NUMBER about formatting issues..."
           echo -e "$COMMENT_BODY" | gh pr comment "$PR_NUMBER" --body-file -
         else
           echo "Nevermind, no formatting issues detected. Skipping PR comment."
         fi
+
+  add-skip-warning-comment:
+    needs: [changes, backend, frontend]
+    if: |
+      always() &&
+      github.event_name == 'pull_request' && 
+      (needs.changes.outputs.backend_override == 'skip' || needs.changes.outputs.frontend_override == 'skip') &&
+      needs.backend.result != 'failure' && needs.frontend.result != 'failure'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Add PR comment for skipped checks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          COMMENT_BODY="### WARNING: CI Checks Skipped!\n\nThe following checks were manually skipped via commit message:\n"
+          
+          if [ "${{ needs.changes.outputs.backend_override }}" == "skip" ]; then
+            COMMENT_BODY+="- **Backend CI**\n"
+          fi
+          if [ "${{ needs.changes.outputs.frontend_override }}" == "skip" ]; then
+            COMMENT_BODY+="- **Frontend CI**\n"
+          fi
+
+          echo "Commenting on PR #$PR_NUMBER about skipped checks..."
+          echo -e "$COMMENT_BODY" | gh pr comment "$PR_NUMBER" --body-file -
