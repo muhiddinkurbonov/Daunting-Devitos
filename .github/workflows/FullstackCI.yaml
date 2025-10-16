@@ -40,8 +40,9 @@ jobs:
       # note that force overrides skip
       - name: Check for commit message overrides
         id: check_overrides
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          COMMIT_MESSAGE=${{ github.event.head_commit.message }}
           BACKEND_OVERRIDE=""
           FRONTEND_OVERRIDE=""
 
