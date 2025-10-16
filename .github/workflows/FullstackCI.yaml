@@ -45,6 +45,8 @@ jobs:
           BACKEND_OVERRIDE=""
           FRONTEND_OVERRIDE=""
 
+          echo "Commit message: $COMMIT_MESSAGE"
+
           if [[ "$COMMIT_MESSAGE" == *"[force backend]"* ]]; then
             echo "Forcing backend checks..."
             BACKEND_OVERRIDE="force"
