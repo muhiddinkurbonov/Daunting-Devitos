@@ -18,7 +18,15 @@ jobs:
       backend_override: ${{ steps.check_overrides.outputs.backend_override }}
       frontend_override: ${{ steps.check_overrides.outputs.frontend_override }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout (only if pull request)
+        uses: actions/checkout@v4
+        if: github.event_name == 'pull_request'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      
+      - name: Checkout (for other events)
+        uses: actions/checkout@v4
+        if: github.event_name != 'pull_request'
 
       # only run specific build check if changes are detected...
       - name: Filter changed files
@@ -41,12 +49,7 @@ jobs:
       - name: Check for commit message overrides
         id: check_overrides
         run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            # for PRs, the checkout is a merge commit, so HEAD^2 is the head of the source branch
-            COMMIT_MESSAGE=$(git log -1 --pretty=%B HEAD^2)
-          else
-            COMMIT_MESSAGE=$(git log -1 --pretty=%B)
-          fi
+          COMMIT_MESSAGE=$(git log -1 --pretty=%B)
           echo "Commit message: $COMMIT_MESSAGE"
 
           BACKEND_OVERRIDE=""
