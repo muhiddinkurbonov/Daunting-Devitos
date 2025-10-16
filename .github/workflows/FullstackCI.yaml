@@ -1,17 +1,44 @@
-name: Fullstack Build
+name: Fullstack CI
 
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
-  build:
+  changes:
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }} # ignore warning, likely a false positive
+      frontend: ${{ steps.filter.outputs.frontend }} # ignore warning, likely a false positive
+    steps:
+      # only run specific build check if changes are detected
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'Project.App/Project.Api/**'
+              - 'Project.App/Project.Test/**'
+              - '**/*.sln'
+              - '**/*.csproj'
+              - '.github/workflows/FullstackBuild.yaml'
+            frontend:
+              - 'Project.App/Project.Client/**'
+              - '.github/workflows/FullstackBuild.yaml'
 
+  backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.result != 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      format_output: ${{ steps.backend_format_check.outputs.output }}
+      outcome: ${{ steps.backend_format_check.outcome }}
     steps:
     - uses: actions/checkout@v4
 
@@ -50,6 +77,16 @@ jobs:
           exit 1
         fi
       continue-on-error: true
+
+  frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.result != 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      format_output: ${{ steps.frontend_format_check.outputs.output }}
+      outcome: ${{ steps.frontend_format_check.outcome }}
+    steps:
+    - uses: actions/checkout@v4
 
     # --- Set up Node.js ---
     - name: Setup Node.js
@@ -98,27 +135,35 @@ jobs:
           exit 1
         fi
       continue-on-error: true
-    
+
+  add-pr-comment:
+    needs: [backend, frontend]
+    # runs only if formatting checks fail
+    # theoretically, if it does not build, *.outputs.outcome should not exist, and the condition should be false
+    if: always() && github.event_name == 'pull_request' && (needs.backend.outputs.outcome == 'failure' || needs.frontend.outputs.outcome == 'failure')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
     # --- Complain if formatting checks fail ---
     - name: Add PR comment if formatting checks fail
-      if: github.event_name == 'pull_request' && (steps.backend_format_check.outcome == 'failure' || steps.frontend_format_check.outcome == 'failure')
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Required for gh CLI to authenticate
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # required for github CLI to authenticate
       run: |
         PR_NUMBER=${{ github.event.pull_request.number }}
         COMMENT_BODY="### Formatting Issues Detected!\n\n"
         HAS_ISSUES=false
 
-        if [ "${{ steps.backend_format_check.outcome }}" == "failure" ]; then
+        if [ "${{ needs.backend.outputs.outcome }}" == "failure" ]; then
           COMMENT_BODY+="- **Backend (Csharpier):** Please run \`dotnet csharpier .\` to fix formatting.\n"
           # add collapsible section for backend output
-          COMMENT_BODY+="<details><summary>View Csharpier output</summary>\n\n\`\`\`\n${{ steps.backend_format_check.outputs.output }}\n\`\`\`\n\n</details>\n\n"
+          COMMENT_BODY+="<details><summary>View Csharpier output</summary>\n\n\`\`\`\n${{ needs.backend.outputs.format_output }}\n\`\`\`\n\n</details>\n\n"
           HAS_ISSUES=true
         fi
-        if [ "${{ steps.frontend_format_check.outcome }}" == "failure" ]; then
+        if [ "${{ needs.frontend.outputs.outcome }}" == "failure" ]; then
           COMMENT_BODY+="- **Frontend (Prettier):** Please run \`npm run format\` in \`Project.App/Project.Client\` to fix formatting.\n"
           # add collapsible section for frontend output
-          COMMENT_BODY+="<details><summary>View Prettier output</summary>\n\n\`\`\`\n${{ steps.frontend_format_check.outputs.output }}\n\`\`\`\n\n</details>\n\n"
+          COMMENT_BODY+="<details><summary>View Prettier output</summary>\n\n\`\`\`\n${{ needs.frontend.outputs.format_output }}\n\`\`\`\n\n</details>\n\n"
           HAS_ISSUES=true
         fi
 
