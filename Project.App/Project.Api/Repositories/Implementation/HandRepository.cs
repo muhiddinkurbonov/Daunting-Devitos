@@ -1,9 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+using Project.Api.Data;
 using Project.Api.Enums;
 using Project.Api.Models;
 using Project.Api.Repositories;
-using Project.Api.Data;
-using Microsoft.EntityFrameworkCore;
-
 
 namespace Project.Api.Repositories
 {
@@ -20,17 +19,19 @@ namespace Project.Api.Repositories
         {
             return await _context.Hands.FirstOrDefaultAsync(h => h.Id == handId);
         }
+
         public async Task<List<Hand>> GetHandsByRoomIdAsync(Guid roomId)
         {
             if (roomId == Guid.Empty)
             {
                 throw new ArgumentException("Invalid roomId");
             }
-            return await _context.Hands
-                .Include(h => h.RoomPlayer)
+            return await _context
+                .Hands.Include(h => h.RoomPlayer)
                 .Where(h => h.RoomPlayer != null && h.RoomPlayer.RoomId == roomId)
                 .ToListAsync();
         }
+
         public async Task<Hand> CreateHandAsync(Hand hand)
         {
             if (hand == null)
@@ -43,6 +44,7 @@ namespace Project.Api.Repositories
 
             return hand;
         }
+
         public async Task<Hand> UpdateHandAsync(Guid handId, Hand hand)
         {
             var existingHand = await _context.Hands.FindAsync(handId);
@@ -62,7 +64,12 @@ namespace Project.Api.Repositories
             return existingHand;
         }
 
-        public async Task<Hand> PatchHandAsync(Guid handId, int? Order = null, string? CardsJson = null, int? Bet = null)
+        public async Task<Hand> PatchHandAsync(
+            Guid handId,
+            int? Order = null,
+            string? CardsJson = null,
+            int? Bet = null
+        )
         {
             var existingHand = await _context.Hands.FindAsync(handId);
             if (existingHand == null)
@@ -96,11 +103,10 @@ namespace Project.Api.Repositories
 
             return existingHand;
         }
-        
+
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
         }
-
     }
 }
