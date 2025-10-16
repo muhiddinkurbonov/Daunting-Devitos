@@ -181,34 +181,36 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-    # --- Complain if formatting checks fail ---
-    - name: Add PR comment if formatting checks fail
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # required for github CLI to authenticate
-      run: |
-        PR_NUMBER=${{ github.event.pull_request.number }}
-        COMMENT_BODY="### Formatting Issues Detected!\n\n"
-        HAS_ISSUES=false
+      - uses: actions/checkout@v4
+      
+      # --- Complain if formatting checks fail ---
+      - name: Add PR comment if formatting checks fail
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # required for github CLI to authenticate
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          COMMENT_BODY="### Formatting Issues Detected!\n\n"
+          HAS_ISSUES=false
 
-        if [ "${{ needs.backend.outputs.outcome }}" == "failure" ]; then
-          COMMENT_BODY+="- **Backend (Csharpier):** Please run \`dotnet csharpier .\` to fix formatting.\n"
-          # add collapsible section for backend output
-          COMMENT_BODY+="<details><summary>View Csharpier output</summary>\n\n\`\`\`\n${{ needs.backend.outputs.format_output }}\n\`\`\`\n\n</details>\n\n"
-          HAS_ISSUES=true
-        fi
-        if [ "${{ needs.frontend.outputs.outcome }}" == "failure" ]; then
-          COMMENT_BODY+="- **Frontend (Prettier):** Please run \`npm run format\` in \`Project.App/Project.Client\` to fix formatting.\n"
-          # add collapsible section for frontend output
-          COMMENT_BODY+="<details><summary>View Prettier output</summary>\n\n\`\`\`\n${{ needs.frontend.outputs.format_output }}\n\`\`\`\n\n</details>\n\n"
-          HAS_ISSUES=true
-        fi
+          if [ "${{ needs.backend.outputs.outcome }}" == "failure" ]; then
+            COMMENT_BODY+="- **Backend (Csharpier):** Please run \`dotnet csharpier .\` to fix formatting.\n"
+            # add collapsible section for backend output
+            COMMENT_BODY+="<details><summary>View Csharpier output</summary>\n\n\`\`\`\n${{ needs.backend.outputs.format_output }}\n\`\`\`\n\n</details>\n\n"
+            HAS_ISSUES=true
+          fi
+          if [ "${{ needs.frontend.outputs.outcome }}" == "failure" ]; then
+            COMMENT_BODY+="- **Frontend (Prettier):** Please run \`npm run format\` in \`Project.App/Project.Client\` to fix formatting.\n"
+            # add collapsible section for frontend output
+            COMMENT_BODY+="<details><summary>View Prettier output</summary>\n\n\`\`\`\n${{ needs.frontend.outputs.format_output }}\n\`\`\`\n\n</details>\n\n"
+            HAS_ISSUES=true
+          fi
 
-        if [ "$HAS_ISSUES" = true ]; then
-          echo "Commenting on PR #$PR_NUMBER about formatting issues..."
-          echo -e "$COMMENT_BODY" | gh pr comment "$PR_NUMBER" --body-file -
-        else
-          echo "Nevermind, no formatting issues detected. Skipping PR comment."
-        fi
+          if [ "$HAS_ISSUES" = true ]; then
+            echo "Commenting on PR #$PR_NUMBER about formatting issues..."
+            echo -e "$COMMENT_BODY" | gh pr comment "$PR_NUMBER" --body-file -
+          else
+            echo "Nevermind, no formatting issues detected. Skipping PR comment."
+          fi
 
   add-skip-warning-comment:
     needs: [changes, backend, frontend]
@@ -221,6 +223,8 @@ jobs:
     permissions:
       pull-requests: write
     steps:
+      - uses: actions/checkout@v4
+
       - name: Add PR comment for skipped checks
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
