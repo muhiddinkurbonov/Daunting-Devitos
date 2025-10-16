@@ -41,11 +41,16 @@ jobs:
       - name: Check for commit message overrides
         id: check_overrides
         run: |
-          COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            # for PRs, the checkout is a merge commit, so HEAD^2 is the head of the source branch
+            COMMIT_MESSAGE=$(git log -1 --pretty=%B HEAD^2)
+          else
+            COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+          fi
+          echo "Commit message: $COMMIT_MESSAGE"
+
           BACKEND_OVERRIDE=""
           FRONTEND_OVERRIDE=""
-
-          echo "Commit message: $COMMIT_MESSAGE"
 
           if [[ "$COMMIT_MESSAGE" == *"[force backend]"* ]]; then
             echo "Forcing backend checks..."
