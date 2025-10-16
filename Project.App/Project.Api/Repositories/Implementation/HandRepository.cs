@@ -1,4 +1,4 @@
-using Project.Api.Enum;
+using Project.Api.Enums;
 using Project.Api.Models;
 using Project.Api.Repositories;
 using Project.Api.Data;
