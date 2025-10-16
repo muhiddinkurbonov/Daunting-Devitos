@@ -1,13 +1,12 @@
-using Project.Api.Enums;
 using Project.Api.Models;
-using Project.Api.Repositories;
 
-namespace Project.Api.Repositories
+namespace Project.Api.Services
 {
-    public interface IHandRepository
+    public interface IHandService
     {
-        Task<Hand?> GetHandAsyncById(Guid handId);
         Task<List<Hand>> GetHandsByRoomIdAsync(Guid roomId);
+
+        Task<Hand?> GetHandAsyncByIdAsync(Guid handId);
 
         Task<List<Hand>> GetHandsByUserIdAsync(Guid roomId, Guid userId);
 
@@ -18,8 +17,5 @@ namespace Project.Api.Repositories
         Task<Hand> PatchHandAsync(Guid handId, int? Order = null, string? CardsJson = null, int? Bet = null);
 
         Task<Hand> DeleteHandAsync(Guid handId);
-
-        Task SaveChangesAsync();
     }
 }
-

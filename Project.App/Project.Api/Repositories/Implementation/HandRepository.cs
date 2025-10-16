@@ -16,9 +16,14 @@ namespace Project.Api.Repositories
             _context = context;
         }
 
-        public async Task<Hand?> GetHandAsyncById(long handId)
+        public async Task<Hand?> GetHandAsyncById(Guid handId)
         {
-            return await _context.Hands.FirstOrDefaultAsync(h => h.Id == handId);
+            if (handId == Guid.Empty)
+            {
+                throw new ArgumentException("Invalid handId");
+            }
+            Hand? hand = await _context.Hands.FirstOrDefaultAsync(h => h.Id == handId);
+            return hand ?? throw new Exception("Hand not found");
         }
         public async Task<List<Hand>> GetHandsByRoomIdAsync(Guid roomId)
         {
@@ -26,10 +31,26 @@ namespace Project.Api.Repositories
             {
                 throw new ArgumentException("Invalid roomId");
             }
-            return await _context.Hands
+            List<Hand> hands = await _context.Hands
                 .Include(h => h.RoomPlayer)
                 .Where(h => h.RoomPlayer != null && h.RoomPlayer.RoomId == roomId)
                 .ToListAsync();
+
+            return (hands == null || hands.Count == 0) ? throw new Exception("No hands found") : hands;
+        }
+        public async Task<List<Hand>> GetHandsByUserIdAsync(Guid roomId, Guid userId)
+        {
+            if (userId == Guid.Empty || roomId == Guid.Empty)
+            {
+                throw new ArgumentException(userId == Guid.Empty ? "Invalid userId" : "Invalid roomId");
+            }
+
+            List<Hand> hands = await _context.Hands
+                .Include(h => h.RoomPlayer)
+                .Where(h => h.RoomPlayer != null && h.RoomPlayer.RoomId == roomId && h.RoomPlayer.UserId == userId)
+                .ToListAsync();
+            
+            return (hands == null || hands.Count == 0) ? throw new Exception("No hands found") : hands;
         }
         public async Task<Hand> CreateHandAsync(Hand hand)
         {
@@ -45,13 +66,10 @@ namespace Project.Api.Repositories
         }
         public async Task<Hand> UpdateHandAsync(Guid handId, Hand hand)
         {
-            var existingHand = await _context.Hands.FindAsync(handId);
-            if (existingHand == null)
-            {
-                throw new KeyNotFoundException("Hand not found");
-            }
+            var existingHand = await _context.Hands.FindAsync(handId) ?? throw new KeyNotFoundException("Hand not found");
 
             // Update properties
+
             existingHand.Order = hand.Order;
             existingHand.CardsJson = hand.CardsJson;
             existingHand.Bet = hand.Bet;
@@ -64,13 +82,10 @@ namespace Project.Api.Repositories
 
         public async Task<Hand> PatchHandAsync(Guid handId, int? Order = null, string? CardsJson = null, int? Bet = null)
         {
-            var existingHand = await _context.Hands.FindAsync(handId);
-            if (existingHand == null)
-            {
-                throw new KeyNotFoundException("Hand not found");
-            }
+            var existingHand = await _context.Hands.FindAsync(handId) ?? throw new KeyNotFoundException("Hand not found");
 
             // Update properties if provided
+
             existingHand.Order = Order.HasValue ? Order.Value : existingHand.Order;
 
             existingHand.CardsJson = CardsJson != null ? CardsJson : existingHand.CardsJson;
@@ -85,11 +100,7 @@ namespace Project.Api.Repositories
 
         public async Task<Hand> DeleteHandAsync(Guid handId)
         {
-            var existingHand = await _context.Hands.FindAsync(handId);
-            if (existingHand == null)
-            {
-                throw new KeyNotFoundException("Hand not found");
-            }
+            var existingHand = await _context.Hands.FindAsync(handId) ?? throw new KeyNotFoundException("Hand not found");
 
             _context.Hands.Remove(existingHand);
             await SaveChangesAsync();
