@@ -40,24 +40,23 @@ jobs:
       # note that force overrides skip
       - name: Check for commit message overrides
         id: check_overrides
-        env:
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
+          COMMIT_MESSAGE=$(git log -1 --pretty=%B)
           BACKEND_OVERRIDE=""
           FRONTEND_OVERRIDE=""
 
-          if [[ $COMMIT_MESSAGE == *"\[force backend\]"* ]]; then
+          if [[ "$COMMIT_MESSAGE" == *"[force backend]"* ]]; then
             echo "Forcing backend checks..."
             BACKEND_OVERRIDE="force"
-          elif [[ $COMMIT_MESSAGE == *"\[skip backend\]"* ]]; then
+          elif [[ "$COMMIT_MESSAGE" == *"[skip backend]"* ]]; then
             echo "Skipping backend checks..."
             BACKEND_OVERRIDE="skip"
           fi
 
-          if [[ $COMMIT_MESSAGE == *"\[force frontend\]"* ]]; then
+          if [[ "$COMMIT_MESSAGE" == *"[force frontend]"* ]]; then
             echo "Forcing frontend checks..."
             FRONTEND_OVERRIDE="force"
-          elif [[ $COMMIT_MESSAGE == *"\[skip frontend\]"* ]]; then
+          elif [[ "$COMMIT_MESSAGE" == *"[skip frontend]"* ]]; then
             echo "Skipping frontend checks..."
             FRONTEND_OVERRIDE="skip"
           fi
