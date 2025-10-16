@@ -1,11 +1,10 @@
 namespace Project.Api.Enum
 {
-    
     public enum Status
     {
-       Active,
+        Active,
         Inactive,
         Away,
-        Left
+        Left,
     }
 }

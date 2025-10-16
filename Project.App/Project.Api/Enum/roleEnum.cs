@@ -4,6 +4,6 @@ namespace Project.Api.Enum
     {
         Admin,
         Moderator,
-        Player
+        Player,
     }
 }

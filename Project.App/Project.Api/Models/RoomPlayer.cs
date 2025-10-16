@@ -28,8 +28,7 @@ public class RoomPlayer
     public Role Role { get; set; }
 
     public Status Status { get; set; }
+
     [Required]
     public long Balance { get; set; }
-    
-    
 }
