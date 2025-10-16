@@ -9,13 +9,13 @@ namespace Project.Api.Models;
 public class RoomPlayer
 {
     [Key]
-    public long Id { get; set; }
+    public Guid Id { get; set; }
 
     [Required]
     public Guid RoomId { get; set; }
 
     [Required]
-    public int UserId { get; set; }
+    public Guid UserId { get; set; }
 
     [ForeignKey("RoomId")]
     public virtual Room? Room { get; set; }
