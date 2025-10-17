@@ -140,5 +140,45 @@ namespace Project.Test.Services
                 .Setup(repo => repo.GetHandByIdAsync(It.IsAny<Guid>()))
                 .ThrowsAsync(new Exception("Hand not found"));
         }
+
+        [Fact]
+        public async Task GetHandsByUserIdAsync_ValidIds_ReturnsHandsList()
+        {
+            var roomId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            // Arrange
+            var hands = new List<Hand>
+            {
+                new Hand
+                {
+                    Id = Guid.NewGuid(),
+                    RoomPlayerId = roomId,
+                    Order = 1,
+                    CardsJson = "[]",
+                    Bet = 100,
+                },
+                new Hand
+                {
+                    Id = Guid.NewGuid(),
+                    RoomPlayerId = roomId,
+                    Order = 2,
+                    CardsJson = "[]",
+                    Bet = 200,
+                },
+            };
+
+            _handRepositoryMock
+                .Setup(repo => repo.GetHandsByUserIdAsync(roomId, userId))
+                .ReturnsAsync(hands);
+
+            var resultHands = await _handService.GetHandsByUserIdAsync(roomId, userId);
+
+            Assert.NotNull(resultHands);
+            Assert.Equal(2, resultHands.Count);
+            _handRepositoryMock.Verify(
+                repo => repo.GetHandsByUserIdAsync(roomId, userId),
+                Times.Once
+            );
+        }
     }
 }

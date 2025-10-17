@@ -65,7 +65,7 @@ public class HandService : IHandService
         {
             // send request to repository
             _logger.LogInformation($"Getting hand {handId}");
-            return await _Repo.GetHandAsyncById(handId);
+            return await _Repo.GetHandByIdAsync(handId);
         }
         catch (Exception e)
         {
