@@ -8,9 +8,9 @@ export default function NavBar() {
 
     let links = [
     // TODO: Replace '/player/1' with the real logged-in player's id when auth is wired up
-    { href: '/player/1', label: 'Profile' },
-        { href: '/rooms', label: 'Rooms'},
-        { href: '/login', label: 'Logout'},
+        // { href: '/player/1', label: 'Profile' },
+        // { href: '/rooms', label: 'Rooms'},
+        // { href: '/login', label: 'Logout'},
     ];
 
   if (pathname.startsWith('/player/')){
