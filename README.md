@@ -3,12 +3,33 @@
 ## Syponsis
 DeVito Lounge is a full-stack web application that brings the classic blackjack game to the web, featuring secure user accounts, real-time gameplay, and persistent data management. Players can join or create game rooms, place bets, and compete against a dealer, with future scalability to support multiplayer sessions. The system’s backend is powered by a RESTful Web API that handles user authentication, game state management, and balance tracking, while the frontend provides an intuitive interface for smooth and interactive gameplay. Built with scalability and modularity in mind, the project’s architecture allows easy expansion for additional features like leaderboards, chat, and multiplayer functionality.
 
-## Features
+## ✨ Features
+
+🃏 Playable Blackjack Game – Fully functional game logic where players can hit, stand, and place bets against a dealer.
+
+👤 User Accounts & Authentication – Secure registration and login system using Google-OAuth authentication.
+
+💰 Balance Tracking – Each player’s balance is updated automatically after each round, win, or loss.
+
+🏠 Game Rooms – Players can create or join rooms to start new blackjack sessions.
+
+👥 Room Player Management – Each room tracks its active players, balances, and roles (dealer/player).
+
+🪄 Deck API – Supports adding cards, creating hands, and updating bets dynamically via REST endpoints.
+
+🔄 Scalable Architecture – Designed to expand into multiplayer support and multiple concurrent game rooms.
+
+⚙️ RESTful API Design – Clean, structured endpoints for users, rooms, room players, and hands.
+
+🧩 Modular Full-Stack Setup – Clear separation between frontend (React) and backend (ASP.NET Core API).
+
+📈 Future-Ready Features – Built to support enhancements like leaderboards, chat, and multiplayer matchmaking.
 
 ## Entity Relationship Diagram (ERD)
 ![alt text](Images/ERD.png)
 
 ## Wireframe Diagram
+![alt text](Images/Wireframe.jpg)
 
 ## Unit Test Coverage
 
