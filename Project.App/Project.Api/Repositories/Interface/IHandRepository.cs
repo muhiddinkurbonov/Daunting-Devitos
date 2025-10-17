@@ -31,4 +31,3 @@ namespace Project.Api.Repositories
         Task SaveChangesAsync();
     }
 }
-
