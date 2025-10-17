@@ -30,11 +30,11 @@ export default function AddCreditsModal({
             <span className="text-yellow-100 text-sm font-medium">Amount to Add</span>
             <input
               type="number"
-              step="0.01"
+              step="10"
               min="0"
               value={creditsToAdd}
               onChange={(e) => setCreditsToAdd(e.target.value)}
-              placeholder="0.00"
+              placeholder="0"
               className="w-full mt-1 px-4 py-3 bg-black/50 border-2 border-yellow-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
               required
             />
