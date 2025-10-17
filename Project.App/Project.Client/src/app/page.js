@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+//Landing page, just allows the user to enter to log in
 export default function Home() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 relative overflow-hidden">
