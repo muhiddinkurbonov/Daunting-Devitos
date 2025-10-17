@@ -19,7 +19,11 @@ namespace Project.Api.Controllers
 
         private readonly IMapper _mapper;
 
-        public HandController(ILogger<HandController> logger, IHandService handService, IMapper mapper)
+        public HandController(
+            ILogger<HandController> logger,
+            IHandService handService,
+            IMapper mapper
+        )
         {
             _logger = logger;
             _handService = handService;
@@ -33,6 +37,7 @@ namespace Project.Api.Controllers
             var handsDto = _mapper.Map<List<HandDTO>>(hands);
             return Ok(handsDto);
         }
+
         [HttpGet("/{handId}", Name = "GetHandById")]
         public async Task<IActionResult> GetHandById(Guid handId, Guid roomId)
         {
@@ -44,6 +49,7 @@ namespace Project.Api.Controllers
             var handDto = _mapper.Map<HandDTO>(hand);
             return Ok(handDto);
         }
+
         [HttpGet("/user/{userId}", Name = "GetHandsByUserId")]
         public async Task<IActionResult> GetHandsByUserId(Guid userId, Guid roomId)
         {
@@ -51,6 +57,16 @@ namespace Project.Api.Controllers
             var handsDto = _mapper.Map<List<HandDTO>>(hands);
             return Ok(handsDto);
         }
+
+        [HttpPost("/", Name = "CreateHand")]
+        public async Task<IActionResult> CreateHand(Guid roomId, [FromBody] HandDTO handDto)
+        {
+            var hand = _mapper.Map<Hand>(handDto);
+            var createdHand = await _handService.CreateHandAsync(hand);
+            var createdHandDto = _mapper.Map<HandDTO>(createdHand);
+            return Ok(createdHandDto);
+        }
+
         [HttpPatch("/{handId}", Name = "AddCardsToHand")]
         public async Task<IActionResult> AddCardsToHand(Guid handId, string cardsJSON)
         {

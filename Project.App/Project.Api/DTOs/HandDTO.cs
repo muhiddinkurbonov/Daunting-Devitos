@@ -11,7 +11,5 @@ namespace Project.Api.DTOs
         public string CardsJson { get; set; } = string.Empty;
 
         public int Bet { get; set; }
-    
-
     }
 }
