@@ -1,12 +1,12 @@
-using CardDeck.Test;
 using FluentAssertions;
+using Project.Test;
 
 [assembly: FluentAssertions.Extensibility.AssertionEngineInitializer(
     typeof(AssertionEngineInitializer),
     nameof(AssertionEngineInitializer.AcknowledgeSoftWarning)
 )]
 
-namespace CardDeck.Test;
+namespace Project.Test;
 
 public static class AssertionEngineInitializer
 {
