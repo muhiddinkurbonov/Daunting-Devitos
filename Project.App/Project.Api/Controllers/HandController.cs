@@ -41,7 +41,7 @@ namespace Project.Api.Controllers
         [HttpGet("/{handId}", Name = "GetHandById")]
         public async Task<IActionResult> GetHandById(Guid handId, Guid roomId)
         {
-            var hand = await _handService.GetHandAsyncByIdAsync(handId);
+            var hand = await _handService.GetHandByIdAsync(handId);
             if (hand == null || hand.RoomPlayer == null || hand.RoomPlayer.RoomId != roomId)
             {
                 return NotFound();

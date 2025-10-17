@@ -180,5 +180,206 @@ namespace Project.Test.Services
                 Times.Once
             );
         }
+
+        [Fact]
+        public async Task GetHandsByUserIdAsync_InvalidIds_ThrowsException()
+        {
+            //Arrange
+            _handRepositoryMock
+                .Setup(repo => repo.GetHandsByUserIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .ThrowsAsync(new Exception("No hands found"));
+            // Act
+            await Assert.ThrowsAsync<Exception>(() =>
+                _handService.GetHandsByUserIdAsync(Guid.NewGuid(), Guid.NewGuid())
+            );
+            // Assert
+            _handRepositoryMock.Verify(
+                repo => repo.GetHandsByUserIdAsync(It.IsAny<Guid>(), It.IsAny<Guid>()),
+                Times.Once
+            );
+        }
+
+        [Fact]
+        public async Task UpdateHandAsync_ValidHand_ReturnsUpdatedHand()
+        {
+            var handId = Guid.NewGuid();
+            var roomPlayerId = Guid.NewGuid();
+            // Arrange
+            var hand = new Hand
+            {
+                Id = handId,
+                RoomPlayerId = roomPlayerId,
+                Order = 1,
+                CardsJson = "[]",
+                Bet = 100,
+            };
+
+            var updatedHand = new Hand
+            {
+                Id = handId,
+                RoomPlayerId = roomPlayerId,
+                Order = 2,
+                CardsJson = "[\"AS\",\"KH\"]",
+                Bet = 200,
+            };
+
+            _handRepositoryMock
+                .Setup(repo => repo.UpdateHandAsync(handId, It.IsAny<Hand>()))
+                .ReturnsAsync(updatedHand);
+
+            var resultHand = await _handService.UpdateHandAsync(handId, updatedHand);
+
+            Assert.NotNull(resultHand);
+            Assert.Equal(2, resultHand.Order);
+            Assert.Equal("[\"AS\",\"KH\"]", resultHand.CardsJson);
+            Assert.Equal(200, resultHand.Bet);
+            _handRepositoryMock.Verify(
+                repo => repo.UpdateHandAsync(handId, It.IsAny<Hand>()),
+                Times.Once
+            );
+        }
+
+        [Fact]
+        public async Task UpdateHandAsync_InvalidHand_ThrowsException()
+        {
+            var handId = Guid.NewGuid();
+            var roomPlayerId = Guid.NewGuid();
+            // Arrange
+            var updatedHand = new Hand
+            {
+                Id = handId,
+                RoomPlayerId = roomPlayerId,
+                Order = 2,
+                CardsJson = "[\"AS\",\"KH\"]",
+                Bet = 200,
+            };
+
+            _handRepositoryMock
+                .Setup(repo => repo.UpdateHandAsync(handId, It.IsAny<Hand>()))
+                .ThrowsAsync(new Exception("Hand not found"));
+
+            // Act & Assert
+            await Assert.ThrowsAsync<Exception>(() =>
+                _handService.UpdateHandAsync(handId, updatedHand)
+            );
+
+            _handRepositoryMock.Verify(
+                repo => repo.UpdateHandAsync(handId, It.IsAny<Hand>()),
+                Times.Once
+            );
+        }
+
+        [Fact]
+        public async Task PatchHandAsync_ValidHand_ReturnsPatchedHand()
+        {
+            var handId = Guid.NewGuid();
+            var roomPlayerId = Guid.NewGuid();
+            // Arrange
+            var hand = new Hand
+            {
+                Id = handId,
+                RoomPlayerId = roomPlayerId,
+                Order = 1,
+                CardsJson = "[]",
+                Bet = 100,
+            };
+
+            var patchedHand = new Hand
+            {
+                Id = handId,
+                RoomPlayerId = roomPlayerId,
+                Order = 1,
+                CardsJson = "[]",
+                Bet = 150,
+            };
+
+            _handRepositoryMock
+                .Setup(repo => repo.PatchHandAsync(handId, 2, null, 150))
+                .ReturnsAsync(patchedHand);
+
+            var resultHand = await _handService.PatchHandAsync(handId, 2, null, 150);
+
+            Assert.NotNull(resultHand);
+            Assert.Equal(1, resultHand.Order);
+            Assert.Equal(150, resultHand.Bet);
+            _handRepositoryMock.Verify(
+                repo => repo.PatchHandAsync(handId, 2, null, 150),
+                Times.Once
+            );
+        }
+
+        [Fact]
+        public async Task PatchHandAsync_InvalidHand_ThrowsException()
+        {
+            var handId = Guid.NewGuid();
+            // Arrange
+
+            _handRepositoryMock
+                .Setup(repo =>
+                    repo.PatchHandAsync(
+                        handId,
+                        It.IsAny<int?>(),
+                        It.IsAny<string?>(),
+                        It.IsAny<int?>()
+                    )
+                )
+                .ThrowsAsync(new Exception("Hand not found"));
+
+            // Act & Assert
+            await Assert.ThrowsAsync<Exception>(() =>
+                _handService.PatchHandAsync(handId, 2, null, 150)
+            );
+
+            _handRepositoryMock.Verify(
+                repo =>
+                    repo.PatchHandAsync(
+                        handId,
+                        It.IsAny<int?>(),
+                        It.IsAny<string?>(),
+                        It.IsAny<int?>()
+                    ),
+                Times.Once
+            );
+        }
+
+        [Fact]
+        public async Task DeleteHandAsync_ValidHandId_ReturnsDeletedHand()
+        {
+            var handId = Guid.NewGuid();
+            var roomPlayerId = Guid.NewGuid();
+            // Arrange
+            var hand = new Hand
+            {
+                Id = handId,
+                RoomPlayerId = roomPlayerId,
+                Order = 1,
+                CardsJson = "[]",
+                Bet = 100,
+            };
+
+            _handRepositoryMock.Setup(repo => repo.DeleteHandAsync(handId)).ReturnsAsync(hand);
+
+            var resultHand = await _handService.DeleteHandAsync(handId);
+
+            Assert.NotNull(resultHand);
+            Assert.Equal(handId, resultHand.Id);
+            _handRepositoryMock.Verify(repo => repo.DeleteHandAsync(handId), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteHandAsync_InvalidHandId_ThrowsException()
+        {
+            var handId = Guid.NewGuid();
+            // Arrange
+
+            _handRepositoryMock
+                .Setup(repo => repo.DeleteHandAsync(handId))
+                .ThrowsAsync(new Exception("Hand not found"));
+
+            // Act & Assert
+            await Assert.ThrowsAsync<Exception>(() => _handService.DeleteHandAsync(handId));
+
+            _handRepositoryMock.Verify(repo => repo.DeleteHandAsync(handId), Times.Once);
+        }
     }
 }
