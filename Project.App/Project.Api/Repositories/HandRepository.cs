@@ -137,7 +137,6 @@ namespace Project.Api.Repositories
                 existingHand.RoomPlayer.Balance -= Bet.Value;
             }
 
-
             // Update the hand in the context and save changes
 
             _context.Hands.Update(existingHand);
