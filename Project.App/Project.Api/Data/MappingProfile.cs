@@ -3,15 +3,14 @@ using AutoMapper;
 using Project.Api.DTOs;
 using Project.Api.Models;
 
-namespace Project.Api.Data
-{
-    public class MappingProfile : Profile
+namespace Project.Api.Data;
+public class MappingProfile : Profile
+{    
+    public MappingProfile()
     {
-        public MappingProfile()
-        {
-            CreateMap<Hand, HandDTO>().ReverseMap();
-            CreateMap<Hand, HandUpdateDTO>().ReverseMap();
-            CreateMap<Hand, HandPatchDTO>().ReverseMap();
-        }
+        CreateMap<Hand, HandDTO>().ReverseMap();
+        CreateMap<Hand, HandUpdateDTO>().ReverseMap();
+        CreateMap<Hand, HandPatchDTO>().ReverseMap();
     }
+
 }

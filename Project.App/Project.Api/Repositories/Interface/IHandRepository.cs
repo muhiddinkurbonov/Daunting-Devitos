@@ -7,7 +7,8 @@ using Project.Api.Enums;
 using Project.Api.Models;
 using Project.Api.Repositories;
 
-namespace Project.Api.Repositories
+namespace Project.Api.Repositories;
+public interface IHandRepository
 {
     public interface IHandRepository
     {
@@ -42,4 +43,6 @@ namespace Project.Api.Repositories
         // Save changes to the database
         Task SaveChangesAsync();
     }
+
 }
+

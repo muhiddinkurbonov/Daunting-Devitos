@@ -16,21 +16,20 @@ using Project.Api.Models;
 using Project.Api.Repositories;
 using Project.Api.Services;
 
-namespace Project.Api.Services
+namespace Project.Api.Services;
+public class HandService : IHandService
 {
-    public class HandService : IHandService
-    {
-        // Call the repository
-        private readonly IHandRepository _Repo;
-        private readonly ILogger<HandService> _logger;
+    // Call the repository
+    private readonly IHandRepository _Repo;
+    private readonly ILogger<HandService> _logger;
 
-        // Constructor
-        public HandService(IHandRepository repo, ILogger<HandService> logger)
-        {
-            // Dependency Injection
-            _Repo = repo;
-            _logger = logger;
-        }
+    // Constructor
+    public HandService(IHandRepository repo, ILogger<HandService> logger)
+    {
+        // Dependency Injection
+        _Repo = repo;
+        _logger = logger;
+    }
 
         // Implement the methods
         // Create a new hand

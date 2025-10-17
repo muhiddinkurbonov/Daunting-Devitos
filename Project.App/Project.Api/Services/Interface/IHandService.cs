@@ -5,20 +5,19 @@
 */
 using Project.Api.Models;
 
-namespace Project.Api.Services
+namespace Project.Api.Services;
+public interface IHandService
 {
-    public interface IHandService
-    {
-        // Define Fields
-        Task<List<Hand>> GetHandsByRoomIdAsync(Guid roomId);
+    // Define Fields
+    Task<List<Hand>> GetHandsByRoomIdAsync(Guid roomId);
 
-        Task<Hand?> GetHandAsyncByIdAsync(Guid handId);
+    Task<Hand?> GetHandAsyncByIdAsync(Guid handId);
 
-        Task<List<Hand>> GetHandsByUserIdAsync(Guid roomId, Guid userId);
+    Task<List<Hand>> GetHandsByUserIdAsync(Guid roomId, Guid userId);
 
-        Task<Hand> CreateHandAsync(Hand hand);
+    Task<Hand> CreateHandAsync(Hand hand);
 
-        Task<Hand> UpdateHandAsync(Guid handId, Hand hand);
+    Task<Hand> UpdateHandAsync(Guid handId, Hand hand);
 
         Task<Hand> PatchHandAsync(
             Guid handId,
@@ -27,6 +26,5 @@ namespace Project.Api.Services
             int? Bet = null
         );
 
-        Task<Hand> DeleteHandAsync(Guid handId);
-    }
+    Task<Hand> DeleteHandAsync(Guid handId);
 }
