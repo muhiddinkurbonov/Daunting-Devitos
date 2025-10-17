@@ -23,7 +23,7 @@ namespace Project.Api.Repositories
 
         // Implement the methods
         // Get a hand by its ID
-        public async Task<Hand?> GetHandAsyncById(Guid handId)
+        public async Task<Hand?> GetHandByIdAsync(Guid handId)
         {
             // Validate handId
             if (handId == Guid.Empty)
@@ -102,14 +102,14 @@ namespace Project.Api.Repositories
                 await _context.Hands.FindAsync(handId)
                 ?? throw new KeyNotFoundException("Hand not found");
 
-        // Update properties
-        existingHand.Order = hand.Order;
-        existingHand.CardsJson = hand.CardsJson;
-        existingHand.Bet = hand.Bet;
+            // Update properties
+            existingHand.Order = hand.Order;
+            existingHand.CardsJson = hand.CardsJson;
+            existingHand.Bet = hand.Bet;
 
-        // Update the hand in the context and save changes
-        _context.Hands.Update(existingHand);
-        await SaveChangesAsync();
+            // Update the hand in the context and save changes
+            _context.Hands.Update(existingHand);
+            await SaveChangesAsync();
 
             // return newly updated hand
             return existingHand;
@@ -128,14 +128,14 @@ namespace Project.Api.Repositories
                 await _context.Hands.FindAsync(handId)
                 ?? throw new KeyNotFoundException("Hand not found");
 
-        // Update properties if provided
-        existingHand.Order = Order ?? existingHand.Order;
-        existingHand.CardsJson = CardsJson ?? existingHand.CardsJson;
-        existingHand.Bet = Bet ?? existingHand.Bet;
+            // Update properties if provided
+            existingHand.Order = Order ?? existingHand.Order;
+            existingHand.CardsJson = CardsJson ?? existingHand.CardsJson;
+            existingHand.Bet = Bet ?? existingHand.Bet;
 
-        // Update the hand in the context and save changes
-        _context.Hands.Update(existingHand);
-        await SaveChangesAsync();
+            // Update the hand in the context and save changes
+            _context.Hands.Update(existingHand);
+            await SaveChangesAsync();
 
             // Return the updated hand
             return existingHand;
@@ -149,9 +149,9 @@ namespace Project.Api.Repositories
                 await _context.Hands.FindAsync(handId)
                 ?? throw new KeyNotFoundException("Hand not found");
 
-        // Remove the hand from the context and save changes
-        _context.Hands.Remove(existingHand);
-        await SaveChangesAsync();
+            // Remove the hand from the context and save changes
+            _context.Hands.Remove(existingHand);
+            await SaveChangesAsync();
 
             // Return the deleted hand
             return existingHand;

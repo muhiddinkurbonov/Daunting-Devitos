@@ -3,6 +3,7 @@ using Project.Api.Data;
 using Project.Api.Models;
 
 namespace Project.Api.Repositories.Interface;
+
 public class UserRepository : IUserRepository
 {
     private readonly AppDbContext _context; // rename AppDbContext later

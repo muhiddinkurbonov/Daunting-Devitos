@@ -7,14 +7,13 @@ using Project.Api.Enums;
 using Project.Api.Models;
 using Project.Api.Repositories;
 
-namespace Project.Api.Repositories;
-public interface IHandRepository
+namespace Project.Api.Repositories
 {
     public interface IHandRepository
     {
         // Define Fields
         // Get a hand by its ID
-        Task<Hand?> GetHandAsyncById(Guid handId);
+        Task<Hand?> GetHandByIdAsync(Guid handId);
 
         // Get all hands in a room
 
@@ -43,6 +42,4 @@ public interface IHandRepository
         // Save changes to the database
         Task SaveChangesAsync();
     }
-
 }
-
