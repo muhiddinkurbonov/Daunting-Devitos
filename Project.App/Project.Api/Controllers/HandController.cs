@@ -44,7 +44,25 @@ namespace Project.Api.Controllers
             var handDto = _mapper.Map<HandDTO>(hand);
             return Ok(handDto);
         }
-        
+        [HttpGet("/user/{userId}", Name = "GetHandsByUserId")]
+        public async Task<IActionResult> GetHandsByUserId(Guid userId, Guid roomId)
+        {
+            var hands = await _handService.GetHandsByUserIdAsync(roomId, userId);
+            var handsDto = _mapper.Map<List<HandDTO>>(hands);
+            return Ok(handsDto);
+        }
+        [HttpPatch("/{handId}", Name = "AddCardsToHand")]
+        public async Task<IActionResult> AddCardsToHand(Guid handId, string cardsJSON)
+        {
+            return Ok();
+        }
 
+        [HttpDelete("/{handId}", Name = "DeleteHand")]
+        public async Task<IActionResult> DeleteHand(Guid handId)
+        {
+            var deletedHand = await _handService.DeleteHandAsync(handId);
+            var deletedHandDto = _mapper.Map<HandDTO>(deletedHand);
+            return Ok(deletedHandDto);
+        }
     }
 }
