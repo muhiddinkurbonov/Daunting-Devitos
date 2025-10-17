@@ -70,7 +70,20 @@ namespace Project.Api.Controllers
         [HttpPatch("/{handId}", Name = "AddCardsToHand")]
         public async Task<IActionResult> AddCardsToHand(Guid handId, string cardsJSON)
         {
-            return Ok();
+
+            var updatedHand = await _handService.PatchHandAsync(
+                handId,
+                CardsJson: cardsJSON
+            );
+            var updatedHandDto = _mapper.Map<HandDTO>(updatedHand);
+            return Ok(updatedHandDto);
+        }
+        [HttpPatch("/{handId}/bet", Name = "UpdateHandBet")]
+        public async Task<IActionResult> UpdateHandBet(Guid handId, int newBet)
+        {
+            var updatedHand = await _handService.PatchHandAsync(handId, Bet: newBet);
+            var updatedHandDto = _mapper.Map<HandDTO>(updatedHand);
+            return Ok(updatedHandDto);
         }
 
         [HttpDelete("/{handId}", Name = "DeleteHand")]

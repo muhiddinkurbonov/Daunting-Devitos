@@ -132,9 +132,16 @@ namespace Project.Api.Repositories
             existingHand.Order = Order ?? existingHand.Order;
             existingHand.CardsJson = CardsJson ?? existingHand.CardsJson;
             existingHand.Bet = Bet ?? existingHand.Bet;
+            if (existingHand.RoomPlayer != null && Bet.HasValue)
+            {
+                existingHand.RoomPlayer.Balance -= Bet.Value;
+            }
+
 
             // Update the hand in the context and save changes
+
             _context.Hands.Update(existingHand);
+            _context.RoomPlayers.Update(existingHand.RoomPlayer!);
             await SaveChangesAsync();
 
             // Return the updated hand
