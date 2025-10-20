@@ -2,25 +2,22 @@ using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Project.Api.Repositories;
-using Project.Api.Services;
 using Project.Api.Controllers;
 using Project.Api.DTOs;
 using Project.Api.Models;
+using Project.Api.Repositories;
+using Project.Api.Services;
 using Project.Test.Helpers;
 using Xunit;
 
 namespace Project.Test.Controllers
 {
-    public class HandControllerTest 
+    public class HandControllerTest
     {
         private readonly Mock<IHandService> _mockHandService;
         private readonly Mock<IMapper> _mockMapper;
 
-        
-
         private HandController _controller;
-
 
         public HandControllerTest()
         {
@@ -31,7 +28,6 @@ namespace Project.Test.Controllers
                 _mockHandService.Object,
                 _mockMapper.Object
             );
-            
         }
 
         [Fact]
@@ -42,14 +38,16 @@ namespace Project.Test.Controllers
             var handId = Guid.NewGuid();
             var handModels = new List<Hand>
             {
-                new () {
+                new()
+                {
                     Id = handId,
                     RoomPlayerId = Guid.NewGuid(),
                     Order = 1,
                     CardsJson = "[]",
                     Bet = 100,
                 },
-                new () {
+                new()
+                {
                     Id = Guid.NewGuid(),
                     RoomPlayerId = Guid.NewGuid(),
                     Order = 2,
@@ -59,16 +57,20 @@ namespace Project.Test.Controllers
                 // Add more Hand objects if needed
             };
 
-            var handDTOs = handModels.Select(h => new HandDTO
-            {
-                Id = h.Id,
-                RoomPlayerId = h.RoomPlayerId,
-                Order = h.Order,
-                CardsJson = h.CardsJson,
-                Bet = h.Bet
-            }).ToList();
+            var handDTOs = handModels
+                .Select(h => new HandDTO
+                {
+                    Id = h.Id,
+                    RoomPlayerId = h.RoomPlayerId,
+                    Order = h.Order,
+                    CardsJson = h.CardsJson,
+                    Bet = h.Bet,
+                })
+                .ToList();
 
-            _mockHandService.Setup(service => service.GetHandsByRoomIdAsync(roomId)).ReturnsAsync(handModels);
+            _mockHandService
+                .Setup(service => service.GetHandsByRoomIdAsync(roomId))
+                .ReturnsAsync(handModels);
             _mockMapper.Setup(m => m.Map<List<HandDTO>>(It.IsAny<List<Hand>>())).Returns(handDTOs);
 
             //Act
@@ -81,6 +83,7 @@ namespace Project.Test.Controllers
 
             _mockHandService.Verify(service => service.GetHandsByRoomIdAsync(roomId), Times.Once);
         }
+
         [Fact]
         public async Task GetHandById_ReturnsNotFound_WhenHandDoesNotExist()
         {
@@ -88,7 +91,9 @@ namespace Project.Test.Controllers
             var handId = Guid.NewGuid();
             var roomId = Guid.NewGuid();
 
-            _mockHandService.Setup(service => service.GetHandByIdAsync(handId)).ReturnsAsync((Hand?)null);
+            _mockHandService
+                .Setup(service => service.GetHandByIdAsync(handId))
+                .ReturnsAsync((Hand?)null);
 
             // Act
             var result = await _controller.GetHandById(handId, roomId);
@@ -97,6 +102,7 @@ namespace Project.Test.Controllers
             Assert.IsType<NotFoundResult>(result);
             _mockHandService.Verify(service => service.GetHandByIdAsync(handId), Times.Once);
         }
+
         [Fact]
         public async Task GetHandById_ReturnsOkResult_WithHandDTO()
         {
@@ -112,12 +118,12 @@ namespace Project.Test.Controllers
                 {
                     Id = roomPlayerId,
                     RoomId = roomId,
-                    UserId = Guid.NewGuid()
+                    UserId = Guid.NewGuid(),
                 },
                 RoomPlayerId = roomPlayerId,
                 Order = 1,
                 CardsJson = "[]",
-                Bet = 100
+                Bet = 100,
             };
 
             var handDTO = new HandDTO
@@ -126,10 +132,12 @@ namespace Project.Test.Controllers
                 RoomPlayerId = handModel.RoomPlayerId,
                 Order = handModel.Order,
                 CardsJson = handModel.CardsJson,
-                Bet = handModel.Bet
+                Bet = handModel.Bet,
             };
 
-            _mockHandService.Setup(service => service.GetHandByIdAsync(handId)).ReturnsAsync(handModel);
+            _mockHandService
+                .Setup(service => service.GetHandByIdAsync(handId))
+                .ReturnsAsync(handModel);
             _mockMapper.Setup(m => m.Map<HandDTO>(It.IsAny<Hand>())).Returns(handDTO);
 
             // Act
@@ -142,6 +150,7 @@ namespace Project.Test.Controllers
 
             _mockHandService.Verify(service => service.GetHandByIdAsync(handId), Times.Once);
         }
+
         [Fact]
         public async Task GetHandsByUserId_ReturnsNotFound_WhenNoHandsExist()
         {
@@ -165,6 +174,7 @@ namespace Project.Test.Controllers
                 Times.Once
             );
         }
+
         [Fact]
         public async Task GetHandsByUserId_ReturnsOkResult_WithListOfHandDTOs()
         {
@@ -173,14 +183,16 @@ namespace Project.Test.Controllers
             var userId = Guid.NewGuid();
             var handModels = new List<Hand>
             {
-                new () {
+                new()
+                {
                     Id = Guid.NewGuid(),
                     RoomPlayerId = Guid.NewGuid(),
                     Order = 1,
                     CardsJson = "[]",
                     Bet = 100,
                 },
-                new () {
+                new()
+                {
                     Id = Guid.NewGuid(),
                     RoomPlayerId = Guid.NewGuid(),
                     Order = 2,
@@ -190,16 +202,20 @@ namespace Project.Test.Controllers
                 // Add more Hand objects if needed
             };
 
-            var handDTOs = handModels.Select(h => new HandDTO
-            {
-                Id = h.Id,
-                RoomPlayerId = h.RoomPlayerId,
-                Order = h.Order,
-                CardsJson = h.CardsJson,
-                Bet = h.Bet
-            }).ToList();
+            var handDTOs = handModels
+                .Select(h => new HandDTO
+                {
+                    Id = h.Id,
+                    RoomPlayerId = h.RoomPlayerId,
+                    Order = h.Order,
+                    CardsJson = h.CardsJson,
+                    Bet = h.Bet,
+                })
+                .ToList();
 
-            _mockHandService.Setup(service => service.GetHandsByUserIdAsync(roomId, userId)).ReturnsAsync(handModels);
+            _mockHandService
+                .Setup(service => service.GetHandsByUserIdAsync(roomId, userId))
+                .ReturnsAsync(handModels);
             _mockMapper.Setup(m => m.Map<List<HandDTO>>(It.IsAny<List<Hand>>())).Returns(handDTOs);
 
             //Act
@@ -210,8 +226,12 @@ namespace Project.Test.Controllers
             var returnValue = Assert.IsAssignableFrom<List<HandDTO>>(okResult.Value);
             Assert.Equal(handDTOs.Count, returnValue.Count);
 
-            _mockHandService.Verify(service => service.GetHandsByUserIdAsync(roomId, userId), Times.Once);
+            _mockHandService.Verify(
+                service => service.GetHandsByUserIdAsync(roomId, userId),
+                Times.Once
+            );
         }
+
         [Fact]
         public async Task CreateHand_ReturnsOkResult_WithCreatedHandDTO()
         {
@@ -223,7 +243,7 @@ namespace Project.Test.Controllers
                 RoomPlayerId = Guid.NewGuid(),
                 Order = 1,
                 CardsJson = "[]",
-                Bet = 100
+                Bet = 100,
             };
 
             var handModel = new Hand
@@ -232,11 +252,13 @@ namespace Project.Test.Controllers
                 RoomPlayerId = handDTO.RoomPlayerId,
                 Order = handDTO.Order,
                 CardsJson = handDTO.CardsJson,
-                Bet = handDTO.Bet
+                Bet = handDTO.Bet,
             };
 
             _mockMapper.Setup(m => m.Map<Hand>(It.IsAny<HandDTO>())).Returns(handModel);
-            _mockHandService.Setup(service => service.CreateHandAsync(handModel)).ReturnsAsync(handModel);
+            _mockHandService
+                .Setup(service => service.CreateHandAsync(handModel))
+                .ReturnsAsync(handModel);
             _mockMapper.Setup(m => m.Map<HandDTO>(It.IsAny<Hand>())).Returns(handDTO);
 
             // Act
@@ -248,8 +270,8 @@ namespace Project.Test.Controllers
             Assert.Equal(handDTO.Id, returnValue.Id);
 
             _mockHandService.Verify(service => service.CreateHandAsync(handModel), Times.Once);
-
         }
+
         // [Fact]
         // public async Task CreateHand_ReturnsBadRequest_WhenHandDTOIsNull()
         // {
@@ -263,7 +285,6 @@ namespace Project.Test.Controllers
         //     {
         //         var result = await _controller.CreateHand(roomId, handDTO);
         //     });
-
 
         //     // Assert
         //     _mockHandService.Verify(service => service.CreateHandAsync(It.IsAny<Hand>()), Times.Never);
@@ -281,7 +302,7 @@ namespace Project.Test.Controllers
                 RoomPlayerId = Guid.NewGuid(),
                 Order = 1,
                 CardsJson = cardsJson,
-                Bet = 100
+                Bet = 100,
             };
 
             var updatedHandDTO = new HandDTO
@@ -290,10 +311,12 @@ namespace Project.Test.Controllers
                 RoomPlayerId = updatedHandModel.RoomPlayerId,
                 Order = updatedHandModel.Order,
                 CardsJson = updatedHandModel.CardsJson,
-                Bet = updatedHandModel.Bet
+                Bet = updatedHandModel.Bet,
             };
 
-            _mockHandService.Setup(service => service.PatchHandAsync(handId, null, cardsJson, null)).ReturnsAsync(updatedHandModel);
+            _mockHandService
+                .Setup(service => service.PatchHandAsync(handId, null, cardsJson, null))
+                .ReturnsAsync(updatedHandModel);
             _mockMapper.Setup(m => m.Map<HandDTO>(It.IsAny<Hand>())).Returns(updatedHandDTO);
 
             // Act
@@ -305,8 +328,12 @@ namespace Project.Test.Controllers
             Assert.Equal(updatedHandDTO.Id, returnValue.Id);
             Assert.Equal(updatedHandDTO.CardsJson, returnValue.CardsJson);
 
-            _mockHandService.Verify(service => service.PatchHandAsync(handId, null, cardsJson, null), Times.Once);
+            _mockHandService.Verify(
+                service => service.PatchHandAsync(handId, null, cardsJson, null),
+                Times.Once
+            );
         }
+
         [Fact]
         public async Task UpdateHandBet_ReturnsOkResult_WithUpdatedHandDTO()
         {
@@ -320,7 +347,7 @@ namespace Project.Test.Controllers
                 RoomPlayerId = Guid.NewGuid(),
                 Order = 1,
                 CardsJson = "[]",
-                Bet = newBet
+                Bet = newBet,
             };
 
             var updatedHandDTO = new HandDTO
@@ -329,10 +356,12 @@ namespace Project.Test.Controllers
                 RoomPlayerId = updatedHandModel.RoomPlayerId,
                 Order = updatedHandModel.Order,
                 CardsJson = updatedHandModel.CardsJson,
-                Bet = updatedHandModel.Bet
+                Bet = updatedHandModel.Bet,
             };
 
-            _mockHandService.Setup(service => service.PatchHandAsync(handId, null, null, newBet)).ReturnsAsync(updatedHandModel);
+            _mockHandService
+                .Setup(service => service.PatchHandAsync(handId, null, null, newBet))
+                .ReturnsAsync(updatedHandModel);
             _mockMapper.Setup(m => m.Map<HandDTO>(It.IsAny<Hand>())).Returns(updatedHandDTO);
 
             // Act
@@ -344,10 +373,12 @@ namespace Project.Test.Controllers
             Assert.Equal(updatedHandDTO.Id, returnValue.Id);
             Assert.Equal(updatedHandDTO.Bet, returnValue.Bet);
 
-            _mockHandService.Verify(service => service.PatchHandAsync(handId, null, null, newBet), Times.Once);
-
+            _mockHandService.Verify(
+                service => service.PatchHandAsync(handId, null, null, newBet),
+                Times.Once
+            );
         }
-        
+
         [Fact]
         public async Task UpdateHandBet_ReturnsBadRequest_WhenNewBetIsZero()
         {
@@ -360,8 +391,12 @@ namespace Project.Test.Controllers
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            _mockHandService.Verify(service => service.PatchHandAsync(It.IsAny<Guid>(), null, null, It.IsAny<int>()), Times.Never);
+            _mockHandService.Verify(
+                service => service.PatchHandAsync(It.IsAny<Guid>(), null, null, It.IsAny<int>()),
+                Times.Never
+            );
         }
+
         [Fact]
         public async Task DeleteHand_ReturnsOkResult_WithDeletedHandDTO()
         {
@@ -374,7 +409,7 @@ namespace Project.Test.Controllers
                 RoomPlayerId = Guid.NewGuid(),
                 Order = 1,
                 CardsJson = "[]",
-                Bet = 100
+                Bet = 100,
             };
 
             var deletedHandDTO = new HandDTO
@@ -383,10 +418,12 @@ namespace Project.Test.Controllers
                 RoomPlayerId = deletedHandModel.RoomPlayerId,
                 Order = deletedHandModel.Order,
                 CardsJson = deletedHandModel.CardsJson,
-                Bet = deletedHandModel.Bet
+                Bet = deletedHandModel.Bet,
             };
 
-            _mockHandService.Setup(service => service.DeleteHandAsync(handId)).ReturnsAsync(deletedHandModel);
+            _mockHandService
+                .Setup(service => service.DeleteHandAsync(handId))
+                .ReturnsAsync(deletedHandModel);
             _mockMapper.Setup(m => m.Map<HandDTO>(It.IsAny<Hand>())).Returns(deletedHandDTO);
 
             // Act
@@ -399,6 +436,7 @@ namespace Project.Test.Controllers
 
             _mockHandService.Verify(service => service.DeleteHandAsync(handId), Times.Once);
         }
+
         [Fact]
         public async Task DeleteHand_ReturnsNotFound_WhenHandDoesNotExist()
         {
@@ -419,9 +457,5 @@ namespace Project.Test.Controllers
 
             _mockHandService.Verify(service => service.DeleteHandAsync(handId), Times.Once);
         }
-
-        
     }
-
-    
 }

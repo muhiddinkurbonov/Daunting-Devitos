@@ -53,14 +53,18 @@ namespace Project.Api.Controllers
         [HttpGet("/user/{userId}", Name = "GetHandsByUserId")]
         public async Task<IActionResult> GetHandsByUserId(Guid userId, Guid roomId)
         {
-            try {
+            try
+            {
                 var hands = await _handService.GetHandsByUserIdAsync(roomId, userId);
                 var handsDto = _mapper.Map<List<HandDTO>>(hands);
                 return Ok(handsDto);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"Error getting hands for user {userId} in room {roomId}: {e.Message}");
+                _logger.LogError(
+                    e,
+                    $"Error getting hands for user {userId} in room {roomId}: {e.Message}"
+                );
                 return NotFound(e.Message);
             }
         }
@@ -68,7 +72,6 @@ namespace Project.Api.Controllers
         [HttpPost("/", Name = "CreateHand")]
         public async Task<IActionResult> CreateHand(Guid roomId, [FromBody] HandDTO handDto)
         {
-            
             var hand = _mapper.Map<Hand>(handDto);
             var createdHand = await _handService.CreateHandAsync(hand);
             var createdHandDto = _mapper.Map<HandDTO>(createdHand);
