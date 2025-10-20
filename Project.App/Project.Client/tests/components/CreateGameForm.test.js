@@ -1,4 +1,3 @@
-import { render } from '@testing-library/react';
 import CreateGameForm from '@/app/components/CreateGameForm';
 
 // Placeholder tests - will be implemented later

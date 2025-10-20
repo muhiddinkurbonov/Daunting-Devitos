@@ -1,4 +1,3 @@
-import { render } from '@testing-library/react';
 import NavBar from '@/app/components/NavBar';
 
 // Mock Next.js navigation hooks

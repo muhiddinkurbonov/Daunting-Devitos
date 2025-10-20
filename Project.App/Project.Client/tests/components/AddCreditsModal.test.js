@@ -1,4 +1,3 @@
-import { render } from '@testing-library/react';
 import AddCreditsModal from '@/app/components/AddCreditsModal';
 
 // Placeholder tests - will be implemented later
