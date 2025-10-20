@@ -41,7 +41,7 @@ namespace Project.Api.Controllers
         [HttpGet("/{handId}", Name = "GetHandById")]
         public async Task<IActionResult> GetHandById(Guid handId, Guid roomId)
         {
-            var hand = await _handService.GetHandAsyncByIdAsync(handId);
+            var hand = await _handService.GetHandByIdAsync(handId);
             if (hand == null || hand.RoomPlayer == null || hand.RoomPlayer.RoomId != roomId)
             {
                 return NotFound();
@@ -53,14 +53,22 @@ namespace Project.Api.Controllers
         [HttpGet("/user/{userId}", Name = "GetHandsByUserId")]
         public async Task<IActionResult> GetHandsByUserId(Guid userId, Guid roomId)
         {
-            var hands = await _handService.GetHandsByUserIdAsync(roomId, userId);
-            var handsDto = _mapper.Map<List<HandDTO>>(hands);
-            return Ok(handsDto);
+            try {
+                var hands = await _handService.GetHandsByUserIdAsync(roomId, userId);
+                var handsDto = _mapper.Map<List<HandDTO>>(hands);
+                return Ok(handsDto);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, $"Error getting hands for user {userId} in room {roomId}: {e.Message}");
+                return NotFound(e.Message);
+            }
         }
 
         [HttpPost("/", Name = "CreateHand")]
         public async Task<IActionResult> CreateHand(Guid roomId, [FromBody] HandDTO handDto)
         {
+            
             var hand = _mapper.Map<Hand>(handDto);
             var createdHand = await _handService.CreateHandAsync(hand);
             var createdHandDto = _mapper.Map<HandDTO>(createdHand);
@@ -70,7 +78,21 @@ namespace Project.Api.Controllers
         [HttpPatch("/{handId}", Name = "AddCardsToHand")]
         public async Task<IActionResult> AddCardsToHand(Guid handId, string cardsJSON)
         {
-            return Ok();
+            var updatedHand = await _handService.PatchHandAsync(handId, CardsJson: cardsJSON);
+            var updatedHandDto = _mapper.Map<HandDTO>(updatedHand);
+            return Ok(updatedHandDto);
+        }
+
+        [HttpPatch("/{handId}/bet", Name = "UpdateHandBet")]
+        public async Task<IActionResult> UpdateHandBet(Guid handId, int newBet)
+        {
+            if (newBet < 0)
+            {
+                return BadRequest("Bet amount cannot be negative or 0");
+            }
+            var updatedHand = await _handService.PatchHandAsync(handId, Bet: newBet);
+            var updatedHandDto = _mapper.Map<HandDTO>(updatedHand);
+            return Ok(updatedHandDto);
         }
 
         [HttpDelete("/{handId}", Name = "DeleteHand")]
