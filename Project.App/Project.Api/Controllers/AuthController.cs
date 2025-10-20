@@ -17,7 +17,6 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status302Found)]
     public IActionResult Login([FromQuery] string? returnUrl = null)
     {
-        var decodeUrl = returnUrl != null ? Uri.UnescapeDataString(returnUrl) : null;
         var props = new AuthenticationProperties
         {
             RedirectUri = string.IsNullOrEmpty(decodeUrl) ? "/swagger" : decodeUrl,
