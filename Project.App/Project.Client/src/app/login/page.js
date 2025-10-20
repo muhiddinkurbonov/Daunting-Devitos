@@ -2,10 +2,12 @@
 
 export default function Login() {
   //placeholder function for Google sign-in
-    const handleGoogleSignIn = () => {
+    const handleGoogleSignIn = (returnUrl = '/rooms', route = '/auth/login') => {
     console.log('Google sign-in clicked');
-    alert('Google sign-in clicked! Check the console.');
-    // Google authentication will be implemented here
+    // Redirect to the backend auth endpoint with a return URL
+    const directUrl = `http://localhost:3000/rooms`; // after login, redirect back here
+    window.location.href = `http://localhost:5131/auth/login?returnUrl=${directUrl}`;
+    console.log('Google sign-in clicked');
   };
 
   return (
