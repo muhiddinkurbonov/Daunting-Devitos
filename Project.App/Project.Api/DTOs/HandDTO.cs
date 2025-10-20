@@ -2,14 +2,14 @@ namespace Project.Api.DTOs
 {
     public class HandDTO
     {
-        public Guid Id { get; set; }
+        required public Guid Id { get; set; }
 
-        public Guid RoomPlayerId { get; set; }
+        required public Guid RoomPlayerId { get; set; }
 
-        public int Order { get; set; }
+        required public int Order { get; set; }
 
-        public string CardsJson { get; set; } = string.Empty;
+        required public string CardsJson { get; set; }
 
-        public int Bet { get; set; }
+        required public int Bet { get; set; }
     }
 }
