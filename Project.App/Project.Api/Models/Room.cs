@@ -6,6 +6,7 @@ namespace Project.Api.Models;
 public class Room
 {
     [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid Id { get; set; }
 
     public Guid HostId { get; set; }
