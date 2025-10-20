@@ -13,10 +13,7 @@ const customJestConfig = {
     // Handle module aliases (this will be automatically configured for you soon)
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  testMatch: [
-    '<rootDir>/tests/**/*.[jt]s?(x)',
-    '<rootDir>/tests/**/*.test.[jt]s?(x)',
-  ],
+  testMatch: ['<rootDir>/tests/**/*.[jt]s?(x)', '<rootDir>/tests/**/*.test.[jt]s?(x)'],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
