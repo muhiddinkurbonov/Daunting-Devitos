@@ -139,6 +139,16 @@ namespace Project.Test.Services
             _handRepositoryMock
                 .Setup(repo => repo.GetHandByIdAsync(It.IsAny<Guid>()))
                 .ThrowsAsync(new Exception("Hand not found"));
+
+            // Act
+            await Assert.ThrowsAsync<Exception>(() =>
+                _handService.GetHandByIdAsync(Guid.NewGuid())
+            );
+
+            _handRepositoryMock.Verify(
+                repo => repo.GetHandByIdAsync(It.IsAny<Guid>()),
+                Times.Once
+            );
         }
 
         [Fact]
