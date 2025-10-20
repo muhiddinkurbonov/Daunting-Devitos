@@ -49,10 +49,7 @@ namespace Project.Api.Controllers
             }
             catch (Exception e)
             {
-                _logger.LogError(
-                    e,
-                    $"Error getting hand {handId} in room {roomId}: {e.Message}"
-                );
+                _logger.LogError(e, $"Error getting hand {handId} in room {roomId}: {e.Message}");
                 return NotFound(e.Message);
             }
         }

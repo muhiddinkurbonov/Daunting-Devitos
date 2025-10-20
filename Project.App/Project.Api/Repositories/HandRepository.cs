@@ -157,6 +157,4 @@ public class HandRepository : IHandRepository
         // Save changes to the database
         await _context.SaveChangesAsync();
     }
-
-   
 }
