@@ -149,5 +149,9 @@ public class HandRepository : IHandRepository
             // Save changes to the database
             await _context.SaveChangesAsync();
         }
+
+    public Task<Hand?> GetHandByIdAsync(Guid handId)
+    {
+        throw new NotImplementedException();
     }
 }
