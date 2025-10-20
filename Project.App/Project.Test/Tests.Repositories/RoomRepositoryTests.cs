@@ -336,7 +336,7 @@ public class RoomRepositoryTests
         // Modify room properties
         room.Description = "Updated description";
         room.MaxPlayers = 8;
-        room.isActive = false;
+        room.IsActive = false;
 
         // Act
         var result = await repository.UpdateAsync(room);
@@ -345,7 +345,7 @@ public class RoomRepositoryTests
         result.Should().NotBeNull();
         result!.Description.Should().Be("Updated description");
         result.MaxPlayers.Should().Be(8);
-        result.isActive.Should().BeFalse();
+        result.IsActive.Should().BeFalse();
 
         var updatedRoom = await context.Rooms.FindAsync(room.Id);
         updatedRoom!.Description.Should().Be("Updated description");

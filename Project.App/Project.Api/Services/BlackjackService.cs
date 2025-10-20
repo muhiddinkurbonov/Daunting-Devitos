@@ -1,6 +1,11 @@
 using System.Text.Json;
 using Project.Api.DTOs;
+using Project.Api.Enums;
+using Project.Api.Models;
+using Project.Api.Models.Games;
+using Project.Api.Repositories.Interface;
 using Project.Api.Services.Interface;
+using Project.Api.Utilities;
 
 namespace Project.Api.Services;
 
@@ -44,53 +49,134 @@ close room
 
 */
 
-#region Blackjack Game Stages
+/*
 
-// initial setup
-// initialize deck, set game configs
-public record BlackjackInitStage : BlackjackStage;
+problem:
+  a REST API is stateless, so there's no way to have a "timer" for game phases.
+  this could lead to a long delay if a player never moves.
 
-// doing pre-round setup
-public record BlackjackSetupStage : BlackjackStage;
+solution (the realistic one):
+  use something like Redis pub/sub to broadcast a delayed message that acts as a timer
 
-// waiting for players to bet
-public record BlackjackBettingStage : BlackjackStage;
+solution (the hacky one):
+  have the initial request handler that started the betting phase start a timer and trigger the next game phase
+  (this could be brittle if the server crashes or restarts)
 
-// dealing
-public record BlackjackDealingStage : BlackjackStage;
+solution (the funny one):
+  have a "hurry up" button that triggers the next game phase if the time is past the deadline
+  (could be combined with prev, but could lead to a race condition)
 
-// player turn
-// TODO: figure out how turn order will work
-public record BlackjackPlayerActionStage(int Index) : BlackjackStage;
+*/
 
-// dealer turn and distribute winnings
-public record BlackjackFinishRoundStage : BlackjackStage;
-
-// teardown, close room
-public record BlackjackTeardownStage : BlackjackStage;
-
-#endregion
-
-public class BlackjackService : IBlackjackService
+public class BlackjackService(
+    IRoomRepository roomRepository,
+    IRoomPlayerRepository roomPlayerRepository,
+    IUserRepository userRepository
+) : IBlackjackService
 {
-    public Task<BlackjackState> GetGamestateAsync(string gameId)
+    private readonly IRoomRepository _roomRepository = roomRepository;
+    private readonly IRoomPlayerRepository _roomPlayerRepository = roomPlayerRepository;
+    private readonly IUserRepository _userRepository = userRepository;
+
+    private BlackjackConfig _config = new();
+    public BlackjackConfig Config
     {
-        throw new NotImplementedException();
+        get => _config;
+        set => _config = value;
     }
 
-    public Task<bool> PerformActionAsync(
-        string gameId,
-        string playerId,
+    public async Task<BlackjackState> GetGameStateAsync(Guid roomId)
+    {
+        string stateString = await _roomRepository.GetGameStateAsync(roomId);
+
+        return JsonSerializer.Deserialize<BlackjackState>(stateString)!;
+    }
+
+    public static bool IsActionValid(string action, BlackjackStage stage) =>
+        action switch
+        {
+            "bet" => stage is BlackjackBettingStage,
+            "hit" => stage is BlackjackPlayerActionStage,
+            "stand" => stage is BlackjackPlayerActionStage,
+            "double" => stage is BlackjackPlayerActionStage,
+            "split" => stage is BlackjackPlayerActionStage,
+            "surrender" => stage is BlackjackPlayerActionStage,
+            _ => false,
+        };
+
+    public async Task PerformActionAsync(
+        Guid roomId,
+        Guid playerId,
         string action,
         JsonElement data
     )
     {
+        // ensure action is valid for this stage
+        BlackjackState state = await GetGameStateAsync(roomId);
+        if (!IsActionValid(action, state.CurrentStage))
+        {
+            throw new BadRequestException(
+                $"Action {action} is not a valid action for this game stage."
+            );
+        }
+
+        // check if player is in the room
+        RoomPlayer player =
+            await _roomPlayerRepository.GetByRoomIdAndUserIdAsync(roomId, playerId)
+            ?? throw new BadRequestException($"Player {playerId} not found.");
+
         BlackjackActionDTO actionDTO = data.ToBlackjackAction(action);
 
+        // do the action :)
         switch (actionDTO)
         {
             case BetAction betAction:
-                throw new NotImplementedException();
+                // check if player has enough chips
+                if (player.Balance < betAction.Amount)
+                {
+                    throw new BadRequestException(
+                        $"Player {playerId} does not have enough chips to bet {betAction.Amount}."
+                    );
+                }
+
+                BlackjackBettingStage stage = (BlackjackBettingStage)state.CurrentStage;
+
+                // set bet in gamestate
+                stage.Bets[player.Id] = betAction.Amount;
+                await _roomRepository.UpdateGameStateAsync(roomId, JsonSerializer.Serialize(state));
+
+                // update player status
+                player.Status = Status.Active;
+                await _roomPlayerRepository.UpdateAsync(player);
+
+                // if not past deadline, do not move to next stage
+                if (DateTime.UtcNow < stage.Deadline)
+                {
+                    break;
+                }
+
+                // time is up, process all bets
+                foreach ((Guid better, long bet) in stage.Bets)
+                {
+                    try
+                    {
+                        // The bet amount should be deducted, so we pass a negative value.
+                        await _roomPlayerRepository.UpdatePlayerBalanceAsync(better, -bet);
+                    }
+                    catch (NotFoundException)
+                    {
+                        // This indicates an inconsistent state. A bet was recorded for a player who no longer exists.
+                        throw new InternalServerException(
+                            $"Could not find player {better} to process their bet."
+                        );
+                    }
+                }
+
+                // move to next stage
+                state.CurrentStage = new BlackjackPlayerActionStage(0);
+                await _roomRepository.UpdateGameStateAsync(roomId, JsonSerializer.Serialize(state));
+
+                break;
             case HitAction hitAction:
                 throw new NotImplementedException();
             case StandAction standAction:
@@ -104,7 +190,5 @@ public class BlackjackService : IBlackjackService
             default:
                 throw new NotImplementedException();
         }
-
-        throw new NotImplementedException();
     }
 }

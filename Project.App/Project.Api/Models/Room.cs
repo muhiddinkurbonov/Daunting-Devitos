@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Project.Api.Models;
 
@@ -10,9 +12,9 @@ public class Room
 
     public Guid HostId { get; set; }
 
-    public bool isPublic { get; set; }
+    public bool IsPublic { get; set; }
 
-    public bool isActive { get; set; }
+    public bool IsActive { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -22,6 +24,8 @@ public class Room
 
     [MaxLength(50)]
     public required string GameMode { get; set; }
+
+    public string GameConfig { get; set; } = string.Empty;
 
     public required string GameState { get; set; }
 
@@ -42,4 +46,14 @@ public class Room
     public virtual User? Host { get; set; }
 
     public virtual ICollection<RoomPlayer> RoomPlayers { get; set; } = [];
+
+    public byte[] RowVersion { get; set; } = []; // concurrency
+}
+
+public class RoomConfiguration : IEntityTypeConfiguration<Room>
+{
+    public void Configure(EntityTypeBuilder<Room> builder)
+    {
+        builder.Property(r => r.RowVersion).IsRowVersion();
+    }
 }
