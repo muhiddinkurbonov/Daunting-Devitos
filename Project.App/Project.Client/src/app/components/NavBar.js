@@ -6,6 +6,22 @@ import { usePathname } from 'next/navigation';
 export default function NavBar() {
     const pathname = usePathname();
 
+    const handleLogout = async () => {
+      try {
+        console.log('Logout clicked');
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || `http://localhost:5131`
+        await fetch(`${apiBaseUrl}/auth/logout`, {
+          method: 'POST',
+          credentials: 'include', // ensures cookies are sent/cleared
+        });
+        // Redirect to login page after logout
+        window.location.href = '/';
+      } catch (error) {
+        // Optionally handle errors (e.g., show a message)
+        console.error('Logout failed:', error);
+      }
+    };
+
     let links = [
     // TODO: Replace '/player/1' with the real logged-in player's id when auth is wired up
         // { href: '/player/1', label: 'Profile' },
@@ -16,17 +32,14 @@ export default function NavBar() {
   if (pathname.startsWith('/player/')){
         links = [
             { href: '/rooms', label: 'Rooms'},
-            { href: '/login', label: 'Logout'},
         ];
   } else if (pathname.startsWith('/rooms')){
         links = [
-      { href: '/player/1', label: 'Profile'},
-            { href: '/login', label: 'Logout'},
+            { href: '/player/1', label: 'Profile'},
         ];
   } else if (pathname.startsWith('/game/')){
         links = [
             { href: '/rooms', label: 'Leave Room'},
-            { href: '/login', label: 'Logout'},
         ];
     }
     return (
@@ -42,6 +55,9 @@ export default function NavBar() {
               {link.label}
             </Link>
           ))}
+          <button className="text-yellow-100 hover:text-yellow-400 font-semibold px-3 py-1 rounded transition" onClick={handleLogout}>
+            Logout
+          </button>
         </div>
       </nav>
     );

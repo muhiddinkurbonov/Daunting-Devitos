@@ -19,7 +19,7 @@ public class AuthController : ControllerBase
     {
         var props = new AuthenticationProperties
         {
-            RedirectUri = string.IsNullOrEmpty(decodeUrl) ? "/swagger" : decodeUrl,
+            RedirectUri = string.IsNullOrEmpty(returnUrl) ? "/swagger" : returnUrl,
         };
         return Challenge(props, GoogleDefaults.AuthenticationScheme);
     }
