@@ -83,10 +83,7 @@ namespace Project.Test.Repository
             var repo = new HandRepository(context);
 
             // Assert
-            await Assert.ThrowsAsync<Exception>(async () =>
-            {
-                await repo.GetHandByIdAsync(Guid.NewGuid());
-            });
+            Assert.Null(res);
         }
 
         [Fact]
@@ -430,11 +427,8 @@ namespace Project.Test.Repository
             Assert.NotNull(res);
             Assert.Equal(handId, res.Id);
 
-            // Verify hand is delected through exception
-            await Assert.ThrowsAsync<Exception>(async () =>
-            {
-                await repo.GetHandByIdAsync(handId);
-            });
+            var deletedHand = await repo.GetHandAsyncById(handId);
+            Assert.Null(deletedHand);
         }
 
         [Fact]

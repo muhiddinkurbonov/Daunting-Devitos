@@ -9,83 +9,69 @@ using Project.Api.Enums;
 using Project.Api.Models;
 using Project.Api.Repositories;
 
-namespace Project.Api.Repositories
+
+namespace Project.Api.Repositories;
+
+public class HandRepository : IHandRepository
 {
-    public class HandRepository : IHandRepository
+    private readonly AppDbContext _context;
+    // Constructor
+    public HandRepository(AppDbContext context)
     {
-        private readonly AppDbContext _context;
-
-        // Constructor
-        public HandRepository(AppDbContext context)
+        _context = context;
+    }
+    // Implement the methods
+    // Get a hand by its ID
+    public async Task<Hand?> GetHandAsyncById(Guid handId)
+    {
+        // Validate handId
+        if (handId == Guid.Empty)
         {
-            _context = context;
+            throw new ArgumentException("Invalid handId");
         }
-
-        // Implement the methods
-        // Get a hand by its ID
-        public async Task<Hand?> GetHandByIdAsync(Guid handId)
+        // Retrieve the hand from the database
+        Hand? hand = await _context.Hands.FirstOrDefaultAsync(h => h.Id == handId);
+        // return hand or throw exception if not found
+        return hand ?? throw new Exception("Hand not found");
+    }
+    public async Task<List<Hand>> GetHandsByRoomIdAsync(Guid roomId)
+    {
+        // Validate roomId
+        if (roomId == Guid.Empty)
         {
-            // Validate handId
-            if (handId == Guid.Empty)
-            {
-                throw new ArgumentException("Invalid handId");
-            }
-            // Retrieve the hand from the database
-            Hand? hand = await _context.Hands.FirstOrDefaultAsync(h => h.Id == handId);
-            // return hand or throw exception if not found
-            return hand ?? throw new Exception("Hand not found");
+            throw new ArgumentException("Invalid roomId");
         }
-
-        public async Task<List<Hand>> GetHandsByRoomIdAsync(Guid roomId)
+        // Retrieve the hands from the database
+        List<Hand> hands = await _context.Hands
+            .Include(h => h.RoomPlayer)
+            .Where(h => h.RoomPlayer != null && h.RoomPlayer.RoomId == roomId)
+            .ToListAsync();
+        // return hands or throw exception if not found
+        return (hands == null || hands.Count == 0) ? throw new Exception("No hands found") : hands;
+    }
+    public async Task<List<Hand>> GetHandsByUserIdAsync(Guid roomId, Guid userId)
+    {
+        // Validate roomId and userId
+        if (userId == Guid.Empty || roomId == Guid.Empty)
         {
-            // Validate roomId
-            if (roomId == Guid.Empty)
-            {
-                throw new ArgumentException("Invalid roomId");
-            }
-            // Retrieve the hands from the database
-            List<Hand> hands = await _context
-                .Hands.Include(h => h.RoomPlayer)
-                .Where(h => h.RoomPlayer != null && h.RoomPlayer.RoomId == roomId)
-                .ToListAsync();
-            // return hands or throw exception if not found
-            return (hands == null || hands.Count == 0)
-                ? throw new Exception("No hands found")
-                : hands;
+            throw new ArgumentException(userId == Guid.Empty ? "Invalid userId" : "Invalid roomId");
         }
-
-        public async Task<List<Hand>> GetHandsByUserIdAsync(Guid roomId, Guid userId)
+        // Retrieve the hands from the database
+        List<Hand> hands = await _context.Hands
+            .Include(h => h.RoomPlayer)
+            .Where(h => h.RoomPlayer != null && h.RoomPlayer.RoomId == roomId && h.RoomPlayer.UserId == userId)
+            .ToListAsync();
+        // return hands or throw exception if not found
+        return (hands == null || hands.Count == 0) ? throw new Exception("No hands found") : hands;
+    }
+    // Create a new hand
+    public async Task<Hand> CreateHandAsync(Hand hand)
+    {
+        //check if hand does not exist
+        if (hand == null)
         {
-            // Validate roomId and userId
-            if (userId == Guid.Empty || roomId == Guid.Empty)
-            {
-                throw new ArgumentException(
-                    userId == Guid.Empty ? "Invalid userId" : "Invalid roomId"
-                );
-            }
-            // Retrieve the hands from the database
-            List<Hand> hands = await _context
-                .Hands.Include(h => h.RoomPlayer)
-                .Where(h =>
-                    h.RoomPlayer != null
-                    && h.RoomPlayer.RoomId == roomId
-                    && h.RoomPlayer.UserId == userId
-                )
-                .ToListAsync();
-            // return hands or throw exception if not found
-            return (hands == null || hands.Count == 0)
-                ? throw new Exception("No hands found")
-                : hands;
+            throw new ArgumentNullException("Hand cannot be null");
         }
-
-        // Create a new hand
-        public async Task<Hand> CreateHandAsync(Hand hand)
-        {
-            //check if hand does not exist
-            if (hand == null)
-            {
-                throw new ArgumentNullException("Hand cannot be null");
-            }
 
             // Asynchronously add the hand to the context and save changes
             await _context.Hands.AddAsync(hand);
@@ -128,20 +114,14 @@ namespace Project.Api.Repositories
                 await _context.Hands.FindAsync(handId)
                 ?? throw new KeyNotFoundException("Hand not found");
 
-            // Update properties if provided
-            existingHand.Order = Order ?? existingHand.Order;
-            existingHand.CardsJson = CardsJson ?? existingHand.CardsJson;
-            existingHand.Bet = Bet ?? existingHand.Bet;
-            if (existingHand.RoomPlayer != null && Bet.HasValue)
-            {
-                existingHand.RoomPlayer.Balance -= Bet.Value;
-            }
+        // Update properties if provided
+        existingHand.Order = Order ?? existingHand.Order;
+        existingHand.CardsJson = CardsJson ?? existingHand.CardsJson;
+        existingHand.Bet = Bet ?? existingHand.Bet;
 
-            // Update the hand in the context and save changes
-
-            _context.Hands.Update(existingHand);
-            _context.RoomPlayers.Update(existingHand.RoomPlayer!);
-            await SaveChangesAsync();
+        // Update the hand in the context and save changes
+        _context.Hands.Update(existingHand);
+        await SaveChangesAsync();
 
             // Return the updated hand
             return existingHand;
