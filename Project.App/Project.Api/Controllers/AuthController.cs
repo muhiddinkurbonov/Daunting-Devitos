@@ -23,7 +23,7 @@ public class AuthController : ControllerBase
             return LocalRedirect(safe);
 
         var props = new AuthenticationProperties { RedirectUri = safe };
-        props.SetParameter("prompt", "select_account"); // or "consent" to force consent screen
+        props.SetParameter("prompt", "select_account"); // this checks the account picker regardless of what google stored in its whos logged in information
 
         return Challenge(props, GoogleDefaults.AuthenticationScheme);
     }

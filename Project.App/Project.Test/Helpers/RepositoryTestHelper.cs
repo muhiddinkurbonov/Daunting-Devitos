@@ -23,7 +23,8 @@ public static class RepositoryTestHelper
         Guid? id = null,
         string? name = null,
         string? email = null,
-        double balance = 1000
+        double balance = 1000,
+        string? avatarUrl = null
     )
     {
         return new User
@@ -32,6 +33,7 @@ public static class RepositoryTestHelper
             Name = name ?? "Test User",
             Email = email ?? $"test{Guid.NewGuid()}@example.com",
             Balance = balance,
+            AvatarUrl = avatarUrl,
         };
     }
 
@@ -51,8 +53,8 @@ public static class RepositoryTestHelper
         {
             Id = id ?? Guid.NewGuid(),
             HostId = hostId ?? Guid.NewGuid(),
-            isPublic = isPublic,
-            isActive = isActive,
+            IsPublic = isPublic,
+            IsActive = isActive,
             CreatedAt = DateTime.UtcNow,
             GameMode = gameMode ?? "Texas Hold'em",
             GameState = gameState ?? "Waiting",

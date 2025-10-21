@@ -4,12 +4,15 @@ using Project.Api.Data;
 using Project.Api.Enums;
 using Project.Api.Models;
 using Project.Api.Repositories;
+using Project.Api.Utilities;
 using Project.Test.Helpers;
 
-namespace Project.Test;
+namespace Project.Test.Tests.Repositories;
 
 public class RoomPlayerRepositoryTests
 {
+    #region Bet
+
     [Fact]
     public async Task GetByIdAsync_ReturnsRoomPlayer_WhenRoomPlayerExists()
     {
@@ -215,7 +218,7 @@ public class RoomPlayerRepositoryTests
         await context.SaveChangesAsync();
 
         // Act
-        var result = await repository.GetByRoomAndUserAsync(room.Id, user.Id);
+        var result = await repository.GetByRoomIdAndUserIdAsync(room.Id, user.Id);
 
         // Assert
         result.Should().NotBeNull();
@@ -234,7 +237,10 @@ public class RoomPlayerRepositoryTests
         var nonExistentUserId = Guid.NewGuid();
 
         // Act
-        var result = await repository.GetByRoomAndUserAsync(nonExistentRoomId, nonExistentUserId);
+        var result = await repository.GetByRoomIdAndUserIdAsync(
+            nonExistentRoomId,
+            nonExistentUserId
+        );
 
         // Assert
         result.Should().BeNull();
@@ -682,16 +688,18 @@ public class RoomPlayerRepositoryTests
     }
 
     [Fact]
-    public async Task UpdatePlayerStatusAsync_DoesNothing_WhenPlayerDoesNotExist()
+    public async Task UpdatePlayerStatusAsync_ThrowsNotFoundException_WhenPlayerDoesNotExist()
     {
         // Arrange
         await using var context = RepositoryTestHelper.CreateInMemoryContext();
         var repository = new RoomPlayerRepository(context);
         var nonExistentId = Guid.NewGuid();
 
-        // Act & Assert - Should not throw
-        await repository.UpdatePlayerStatusAsync(nonExistentId, Status.Inactive);
-        context.RoomPlayers.Should().BeEmpty();
+        // Act
+        Func<Task> act = () => repository.UpdatePlayerStatusAsync(nonExistentId, Status.Inactive);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     [Fact]
@@ -723,16 +731,18 @@ public class RoomPlayerRepositoryTests
     }
 
     [Fact]
-    public async Task UpdatePlayerBalanceAsync_DoesNothing_WhenPlayerDoesNotExist()
+    public async Task UpdatePlayerBalanceAsync_ThrowsNotFoundException_WhenPlayerDoesNotExist()
     {
         // Arrange
         await using var context = RepositoryTestHelper.CreateInMemoryContext();
         var repository = new RoomPlayerRepository(context);
         var nonExistentId = Guid.NewGuid();
 
-        // Act & Assert - Should not throw
-        await repository.UpdatePlayerBalanceAsync(nonExistentId, 5000);
-        context.RoomPlayers.Should().BeEmpty();
+        // Act
+        Func<Task> act = () => repository.UpdatePlayerBalanceAsync(nonExistentId, 5000);
+
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     [Fact]
@@ -883,4 +893,6 @@ public class RoomPlayerRepositoryTests
         result.Should().Contain(rp => rp.Status == Status.Away);
         result.Should().Contain(rp => rp.Status == Status.Left);
     }
+
+    #endregion
 }
