@@ -1,7 +1,5 @@
 import RoomsClient from './RoomsClient';
 
-import CreateGameForm from '../components/CreateGameForm';
-
 //Will fetch the real rooms data here
 const dummyRooms = [
   { id: 1, roomName: 'High Rollers', players: 2, minBet: 10 },

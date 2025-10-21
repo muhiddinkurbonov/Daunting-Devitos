@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AddCreditsModal from '../../components/AddCreditsModal';
 
-export default function PlayerClient({ id, initialBalance }) {
+export default function PlayerClient({ _id, initialBalance }) {
   const router = useRouter();
   const [playerName] = useState('Danny Devito');
   const [balance, setBalance] = useState(initialBalance ?? 1000);
