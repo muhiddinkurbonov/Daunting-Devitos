@@ -14,19 +14,23 @@ public class AuthController : ControllerBase
     // GET /auth/login
     [HttpGet("login")]
     [AllowAnonymous]
-    [ProducesResponseType(StatusCodes.Status302Found)]
     public IActionResult Login([FromQuery] string? returnUrl = null)
     {
-        var props = new AuthenticationProperties
-        {
-            RedirectUri = string.IsNullOrEmpty(returnUrl) ? "/swagger" : returnUrl,
-        };
+        var safe =
+            string.IsNullOrEmpty(returnUrl) || !Url.IsLocalUrl(returnUrl) ? "/swagger" : returnUrl; //used parameter return url otherwise to swagger
+
+        if (User.Identity?.IsAuthenticated == true)
+            return LocalRedirect(safe);
+
+        var props = new AuthenticationProperties { RedirectUri = safe };
+        props.SetParameter("prompt", "select_account"); // or "consent" to force consent screen
+
         return Challenge(props, GoogleDefaults.AuthenticationScheme);
     }
 
     // POST /auth/logout
     [HttpPost("logout")]
-    [Authorize]
+    [AllowAnonymous]
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
