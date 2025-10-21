@@ -19,7 +19,7 @@ export default function PlayerClient({ _id, initialBalance }) {
         if (!res.ok) {
           router.replace('/login');
         } else {
-          res.json().then(data => {
+          res.json().then((data) => {
             console.log('Authenticated user:', data);
           });
         }

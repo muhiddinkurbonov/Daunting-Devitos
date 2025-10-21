@@ -6,21 +6,20 @@ import { usePathname } from 'next/navigation';
 export default function NavBar() {
   const pathname = usePathname();
 
-
   const handleLogout = async () => {
     console.log('[NavBar] Logout clicked');
-    
+
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
       console.log('[NavBar] Calling logout endpoint:', `${apiBaseUrl}/auth/logout`);
-      
+
       const response = await fetch(`${apiBaseUrl}/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
-      
+
       console.log('[NavBar] Logout response status:', response.status);
-      
+
       if (response.ok) {
         console.log('[NavBar] Logout successful, redirecting to /login');
         window.location.href = '/login';
@@ -40,20 +39,15 @@ export default function NavBar() {
     // TODO: Replace '/player/1' with the real logged-in player's id when auth is wired up
     // { href: '/player/1', label: 'Profile' },
     // { href: '/rooms', label: 'Rooms'},
-  ];  if (pathname.startsWith('/player/')) {
-    links = [
-      { href: '/rooms', label: 'Rooms' },
-    ];
+  ];
+  if (pathname.startsWith('/player/')) {
+    links = [{ href: '/rooms', label: 'Rooms' }];
   } else if (pathname.startsWith('/rooms')) {
-    links = [
-      { href: '/player/1', label: 'Profile' },
-    ];
+    links = [{ href: '/player/1', label: 'Profile' }];
   } else if (pathname.startsWith('/game/')) {
-    links = [
-      { href: '/rooms', label: 'Leave Room' },
-    ];
+    links = [{ href: '/rooms', label: 'Leave Room' }];
   }
-  
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 w-full bg-black/80 border-b-2 border-yellow-600 py-3 px-6 flex gap-6 items-center shadow-lg backdrop-blur">
       <span className="font-bold text-yellow-400 text-xl tracking-wide">Double Down Devito</span>

@@ -6,5 +6,3 @@ export default function PlayerProfile({ params }) {
   // Auth check is handled by client-side guard in PlayerClient
   return <PlayerClient id={id} initialBalance={1000} />;
 }
-
-

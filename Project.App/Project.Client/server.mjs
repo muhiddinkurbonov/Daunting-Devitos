@@ -11,7 +11,7 @@ const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
 // Self-signed certificate for local development
-// You can generate these with: 
+// You can generate these with:
 // openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes
 const httpsOptions = {
   key: fs.readFileSync('./localhost-key.pem'),

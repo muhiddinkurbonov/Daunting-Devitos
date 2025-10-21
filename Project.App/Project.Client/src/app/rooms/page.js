@@ -9,9 +9,5 @@ const dummyRooms = [
 ];
 
 export default function Rooms() {
- 
-
-  return (
-    <RoomsClient rooms={dummyRooms} />
-  );
+  return <RoomsClient rooms={dummyRooms} />;
 }

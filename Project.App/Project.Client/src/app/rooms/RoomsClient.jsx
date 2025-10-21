@@ -10,7 +10,7 @@ export default function RoomsClient({ rooms }) {
   useEffect(() => {
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
     console.log('[RoomsClient] Checking authentication...');
-    
+
     fetch(`${apiBaseUrl}/auth/me`, { credentials: 'include' })
       .then((res) => {
         console.log('[RoomsClient] Auth response status:', res.status);

@@ -10,7 +10,7 @@ export default function Login() {
 
     // Where to land in the SPA after successful login
     const returnUrl = `${window.location.origin}/rooms`; // e.g., http://localhost:3000/rooms
-    
+
     console.log('API Base URL:', apiBaseUrl);
     console.log('Return URL:', returnUrl);
     console.log('Full login URL:', `${apiBaseUrl}/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`);
