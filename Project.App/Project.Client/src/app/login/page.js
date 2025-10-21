@@ -1,21 +1,23 @@
 'use client';
 
 export default function Login() {
-  //placeholder function for Google sign-in
-// Click handler for "Sign in with Google"
-const handleGoogleSignIn = () => {
-  console.log('Google sign-in clicked');
-
-  // API base HTTPS in dev. Set NEXT_PUBLIC_API_URL in .env.local, else fallback.
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
-
-  // Where to land in the SPA after successful login
-  const returnUrl = `${window.location.origin}/rooms`; // e.g., http://localhost:3000/rooms
-
-  // Send the browser to your backend auth endpoint with a safe returnUrl
-  window.location.href = `${apiBaseUrl}/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`;
-};
+  // Click handler for "Sign in with Google"
+  const handleGoogleSignIn = () => {
     console.log('Google sign-in clicked');
+
+    // API base HTTPS in dev. Set NEXT_PUBLIC_API_URL in .env.local, else fallback.
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
+
+    // Where to land in the SPA after successful login
+    const returnUrl = `${window.location.origin}/rooms`; // e.g., http://localhost:3000/rooms
+    
+    console.log('API Base URL:', apiBaseUrl);
+    console.log('Return URL:', returnUrl);
+    console.log('Full login URL:', `${apiBaseUrl}/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`);
+
+    // Send the browser to your backend auth endpoint with a safe returnUrl
+    window.location.href = `${apiBaseUrl}/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`;
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 relative overflow-hidden">

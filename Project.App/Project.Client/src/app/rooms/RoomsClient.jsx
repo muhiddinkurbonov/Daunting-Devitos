@@ -8,7 +8,7 @@ export default function RoomsClient({ rooms }) {
   const router = useRouter();
 
   useEffect(() => {
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5131';
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069/';
     fetch(`${apiBaseUrl}/auth/me`, { credentials: 'include' })
       .then((res) => {
         if (!res.ok) {
