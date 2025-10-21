@@ -60,6 +60,18 @@ public class Program
         //Auto Mapper
         builder.Services.AddAutoMapper(typeof(Program));
 
+        // CORS configuration
+        builder.Services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(policy =>
+            {
+                policy.WithOrigins("http://localhost:3000") // Your Next.js frontend
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials(); // Required for cookies
+            });
+        });
+
         builder.Services.AddAuthorization();
 
         //sanity check for auth errors logging
@@ -158,6 +170,7 @@ public class Program
             app.UseSwaggerUI();
         }
 
+        app.UseCors(); // Enable CORS
         app.UseHttpsRedirection();
 
         app.UseCors(CorsPolicy);
