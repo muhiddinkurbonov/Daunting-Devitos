@@ -8,10 +8,9 @@ const dummyRooms = [
 ];
 
 export default function Rooms() {
-<<<<<<< HEAD
   // Auth check is handled by client-side guard in RoomsClient
-  return <RoomsClient rooms={dummyRooms} />;
-=======
+ // return <RoomsClient rooms={dummyRooms} />;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 p-8 flex flex-col md:flex-row gap-8 relative overflow-hidden">
       {/* Casino felt texture overlay */}
