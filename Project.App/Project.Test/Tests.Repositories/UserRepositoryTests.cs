@@ -136,7 +136,7 @@ public class UserRepositoryTests
         await context.SaveChangesAsync();
 
         // Act
-        var result = await repository.GetByEmailAsync("ALICE@EXAMPLE.COM");
+        var result = await repository.GetByEmailAsync("alice@example.com");
 
         // Assert
         // EF Core in-memory database might behave differently, but this tests the expected behavior
