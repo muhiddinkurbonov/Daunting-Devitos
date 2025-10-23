@@ -29,8 +29,11 @@ public class HandRepository : IHandRepository
         {
             throw new ArgumentException("Invalid handId");
         }
-        // Retrieve the hand from the database
-        Hand? hand = await _context.Hands.FirstOrDefaultAsync(h => h.Id == handId);
+        // Retrieve the hand from the database with navigation properties
+        Hand? hand = await _context.Hands
+            .Include(h => h.RoomPlayer)
+            .ThenInclude(rp => rp!.Room)
+            .FirstOrDefaultAsync(h => h.Id == handId);
         // return hand or throw exception if not found
         return hand ?? throw new Exception("Hand not found");
     }

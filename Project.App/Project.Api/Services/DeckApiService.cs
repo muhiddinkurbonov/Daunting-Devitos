@@ -10,6 +10,7 @@ public class DeckApiService : IDeckApiService
 {
     private readonly HttpClient _httpClient;
     private readonly string _baseApiUrl;
+    private readonly ILogger<DeckApiService> _logger;
 
     private readonly JsonSerializerOptions _jsonSerializerOptions = new()
     {
@@ -17,10 +18,11 @@ public class DeckApiService : IDeckApiService
         NumberHandling = JsonNumberHandling.AllowReadingFromString,
     };
 
-    public DeckApiService(HttpClient client, IConfiguration configuration)
+    public DeckApiService(HttpClient client, IConfiguration configuration, ILogger<DeckApiService> logger)
     {
         _httpClient = client;
         _baseApiUrl = configuration["DeckApiSettings:BaseUrl"] ?? "https://deckofcardsapi.com/api";
+        _logger = logger;
     }
 
     /// <summary>
@@ -96,7 +98,9 @@ public class DeckApiService : IDeckApiService
             throw new ArgumentOutOfRangeException(nameof(count), "Count must be non-negative");
         }
 
-        // draw cards from deck
+        _logger.LogWarning($"[DrawCards] Drawing {count} cards for pile '{handName}' from deck {deckId}");
+
+        // Draw cards from deck
         string drawUrl = $"{_baseApiUrl}/deck/{deckId}/draw/?count={count}";
         var drawResponse = await _httpClient.GetAsync(drawUrl);
         drawResponse.EnsureSuccessStatusCode();
@@ -105,21 +109,18 @@ public class DeckApiService : IDeckApiService
             _jsonSerializerOptions
         );
 
+        _logger.LogWarning($"[DrawCards] Drew {drawData?.Cards?.Count ?? 0} cards from deck");
+
         if (drawData?.Cards is null || drawData.Cards.Count == 0)
         {
-            // shouldn't happen, but if it does, return the current hand
-            return await ListHand(deckId, handName);
+            _logger.LogError($"[DrawCards] No cards drawn from deck!");
+            return new List<CardDTO>();
         }
 
-        // get card codes (as csv string)
-        var cardCodes = drawData.Cards.Select(c => c.Code);
-        string cardsToAdd = string.Join(",", cardCodes);
-
-        // add cards to the player’s hand
-        await AddToHand(deckId, handName, cardsToAdd);
-
-        // return contents of hand
-        return await ListHand(deckId, handName);
+        // Return the drawn cards directly - don't try to add to pile
+        // The pile concept in Deck API is broken, so we'll just return the cards
+        _logger.LogWarning($"[DrawCards] Returning {drawData.Cards.Count} cards: {string.Join(", ", drawData.Cards.Select(c => c.Code))}");
+        return drawData.Cards;
     }
 
     /// <summary>
@@ -145,11 +146,14 @@ public class DeckApiService : IDeckApiService
     private async Task<bool> AddToHand(string deckId, string handName, string cardCodes)
     {
         string addToPileUrl = $"{_baseApiUrl}/deck/{deckId}/pile/{handName}/add/?cards={cardCodes}";
+        _logger.LogWarning($"[AddToHand] URL: {addToPileUrl}");
         var addResponse = await _httpClient.GetAsync(addToPileUrl);
         if (!addResponse.IsSuccessStatusCode)
         {
             throw new HttpRequestException("Failed to return cards to deck.");
         }
+        var responseContent = await addResponse.Content.ReadAsStringAsync();
+        _logger.LogWarning($"[AddToHand] Response: {responseContent}");
         return true;
     }
 
@@ -176,12 +180,25 @@ public class DeckApiService : IDeckApiService
     private async Task<List<CardDTO>> ListHand(string deckId, string handName)
     {
         string listPileUrl = $"{_baseApiUrl}/deck/{deckId}/pile/{handName}/list/";
+        _logger.LogWarning($"[ListHand] URL: {listPileUrl}");
         var listResponse = await _httpClient.GetAsync(listPileUrl);
         listResponse.EnsureSuccessStatusCode();
+
+        var responseContent = await listResponse.Content.ReadAsStringAsync();
+        _logger.LogWarning($"[ListHand] Response: {responseContent}");
 
         var listData = await listResponse.Content.ReadFromJsonAsync<ListPilesResponseDTO>(
             _jsonSerializerOptions
         );
+
+        _logger.LogWarning($"[ListHand] Piles in response: {listData?.Piles?.Count ?? 0}");
+        if (listData?.Piles != null)
+        {
+            foreach (var pileName in listData.Piles.Keys)
+            {
+                _logger.LogWarning($"[ListHand] Pile found: '{pileName}', Cards: {listData.Piles[pileName]?.Cards?.Count ?? 0}");
+            }
+        }
 
         List<CardDTO> cardsInHand = [];
         if (
@@ -191,6 +208,10 @@ public class DeckApiService : IDeckApiService
         )
         {
             cardsInHand = pile.Cards;
+        }
+        else
+        {
+            _logger.LogError($"[ListHand] Could not find pile '{handName}' in response!");
         }
 
         return cardsInHand;

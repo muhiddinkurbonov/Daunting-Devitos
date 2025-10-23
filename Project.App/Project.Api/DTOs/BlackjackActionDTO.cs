@@ -23,6 +23,12 @@ public record HurryUpAction : BlackjackActionDTO;
 
 public static class JsonElementExtensions
 {
+    private static readonly JsonSerializerOptions _deserializationOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
     /// <summary>
     /// Extension method to deserialize a <see cref="BlackjackActionDTO"/> from a <see cref="JsonElement"/>.
     /// Any errors thrown during deserialization will be passed to the caller.
@@ -32,13 +38,13 @@ public static class JsonElementExtensions
         return (
                 action switch
                 {
-                    "bet" => element.Deserialize<BetAction>(),
-                    "hit" => element.Deserialize<HitAction>(),
-                    "stand" => element.Deserialize<StandAction>(),
-                    "double" => element.Deserialize<DoubleAction>(),
-                    "split" => element.Deserialize<SplitAction>(),
-                    "surrender" => (BlackjackActionDTO?)element.Deserialize<SurrenderAction>(),
-                    "hurry_up" => element.Deserialize<HurryUpAction>(),
+                    "bet" => element.Deserialize<BetAction>(_deserializationOptions),
+                    "hit" => element.Deserialize<HitAction>(_deserializationOptions),
+                    "stand" => element.Deserialize<StandAction>(_deserializationOptions),
+                    "double" => element.Deserialize<DoubleAction>(_deserializationOptions),
+                    "split" => element.Deserialize<SplitAction>(_deserializationOptions),
+                    "surrender" => (BlackjackActionDTO?)element.Deserialize<SurrenderAction>(_deserializationOptions),
+                    "hurry_up" => element.Deserialize<HurryUpAction>(_deserializationOptions),
                     _ => throw new NotSupportedException(
                         $"Action '{action}' is not a valid action for Blackjack."
                     ),

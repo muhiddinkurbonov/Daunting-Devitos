@@ -74,7 +74,7 @@ export default function CreateGameForm({ userId, onRoomCreated }) {
           gameState: initialGameState,
           gameConfig: gameConfig,
           maxPlayers: maxPlayers,
-          minPlayers: 2,
+          minPlayers: 1,
           deckId: '',
         }),
       });

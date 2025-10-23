@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Project.Api.DTOs;
 using Project.Api.Models;
 using Project.Api.Services.Interface;
+using System.Text.Json;
 
 namespace Project.Api.Controllers
 {
@@ -19,6 +20,14 @@ namespace Project.Api.Controllers
 
         private readonly IMapper _mapper;
 
+        // JSON serialization options with type discriminators for polymorphic types
+        private static readonly JsonSerializerOptions _gameStateJsonOptions = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = false,
+            TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver()
+        };
+
         public HandController(
             ILogger<HandController> logger,
             IHandService handService,
@@ -32,7 +41,7 @@ namespace Project.Api.Controllers
             _mapper = mapper;
         }
 
-        [HttpGet("/", Name = "GetHandsByRoomId")]
+        [HttpGet("", Name = "GetHandsByRoomId")]
         public async Task<IActionResult> GetHandsByRoomId(Guid roomId)
         {
             var hands = await _handService.GetHandsByRoomIdAsync(roomId);
@@ -40,8 +49,8 @@ namespace Project.Api.Controllers
             return Ok(handsDto);
         }
 
-        [HttpGet("/{handId}", Name = "GetHandById")]
-        public async Task<IActionResult> GetHandById(Guid handId, Guid roomId)
+        [HttpGet("{handId}", Name = "GetHandById")]
+        public async Task<IActionResult> GetHandById(Guid roomId, Guid handId)
         {
             try
             {
@@ -56,8 +65,8 @@ namespace Project.Api.Controllers
             }
         }
 
-        [HttpGet("/user/{userId}", Name = "GetHandsByUserId")]
-        public async Task<IActionResult> GetHandsByUserId(Guid userId, Guid roomId)
+        [HttpGet("user/{userId}", Name = "GetHandsByUserId")]
+        public async Task<IActionResult> GetHandsByUserId(Guid roomId, Guid userId)
         {
             try
             {
@@ -75,7 +84,53 @@ namespace Project.Api.Controllers
             }
         }
 
-        [HttpPost("/", Name = "CreateHand")]
+        [HttpGet("{handId}/cards", Name = "GetHandCards")]
+        public async Task<IActionResult> GetHandCards(Guid roomId, Guid handId)
+        {
+            try
+            {
+                _logger.LogInformation($"[GetHandCards] Fetching cards for hand {handId} in room {roomId}");
+
+                var hand = await _handService.GetHandByIdAsync(handId);
+                if (hand == null)
+                {
+                    _logger.LogWarning($"[GetHandCards] Hand {handId} not found");
+                    return NotFound("Hand not found");
+                }
+
+                var room = hand.RoomPlayer?.Room;
+                if (room == null)
+                {
+                    _logger.LogWarning($"[GetHandCards] Room not found");
+                    return BadRequest("Room not found");
+                }
+
+                // Get cards from game state instead of Deck API
+                if (string.IsNullOrEmpty(room.GameState))
+                {
+                    _logger.LogWarning($"[GetHandCards] GameState is empty");
+                    return Ok(new List<object>());
+                }
+
+                var gameState = JsonSerializer.Deserialize<Project.Api.Models.Games.BlackjackState>(room.GameState, _gameStateJsonOptions);
+                if (gameState?.PlayerHands == null || !gameState.PlayerHands.ContainsKey(handId.ToString()))
+                {
+                    _logger.LogWarning($"[GetHandCards] No cards found for hand {handId} in game state");
+                    return Ok(new List<object>());
+                }
+
+                var cards = gameState.PlayerHands[handId.ToString()];
+                _logger.LogInformation($"[GetHandCards] Found {cards.Count} cards in game state");
+                return Ok(cards);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, $"Error getting cards for hand {handId}: {e.Message}");
+                return StatusCode(500, e.Message);
+            }
+        }
+
+        [HttpPost("", Name = "CreateHand")]
         public async Task<IActionResult> CreateHand(Guid roomId, [FromBody] HandDTO handDto)
         {
             var hand = _mapper.Map<Hand>(handDto);
@@ -84,8 +139,8 @@ namespace Project.Api.Controllers
             return Ok(createdHandDto);
         }
 
-        [HttpPatch("/{handId}", Name = "AddCardsToHand")]
-        public async Task<IActionResult> AddCardsToHand(Guid handId)
+        [HttpPatch("{handId}", Name = "AddCardsToHand")]
+        public async Task<IActionResult> AddCardsToHand(Guid roomId, Guid handId)
         {
             try
             {
@@ -107,8 +162,8 @@ namespace Project.Api.Controllers
             }
         }
 
-        [HttpPatch("/{handId}/bet", Name = "UpdateHandBet")]
-        public async Task<IActionResult> UpdateHandBet(Guid handId, int newBet)
+        [HttpPatch("{handId}/bet", Name = "UpdateHandBet")]
+        public async Task<IActionResult> UpdateHandBet(Guid roomId, Guid handId, int newBet)
         {
             if (newBet < 0)
             {
@@ -119,8 +174,8 @@ namespace Project.Api.Controllers
             return Ok(updatedHandDto);
         }
 
-        [HttpDelete("/{handId}", Name = "DeleteHand")]
-        public async Task<IActionResult> DeleteHand(Guid handId)
+        [HttpDelete("{handId}", Name = "DeleteHand")]
+        public async Task<IActionResult> DeleteHand(Guid roomId, Guid handId)
         {
             var deletedHand = await _handService.DeleteHandAsync(handId);
             var deletedHandDto = _mapper.Map<HandDTO>(deletedHand);
