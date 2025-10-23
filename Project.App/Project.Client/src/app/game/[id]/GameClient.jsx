@@ -484,40 +484,83 @@ export default function GameClient({ roomId }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 max-h-[calc(100vh-14rem)] overflow-hidden">
+        {/* Left Sidebar - Players List */}
+        <div className="xl:col-span-1 overflow-hidden">
+          {/* Players List */}
+          <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-3 h-full overflow-y-auto">
+            <h2 className="text-lg font-bold text-yellow-400 mb-3">
+              Players ({roomPlayers.length}/{room?.maxPlayers || '?'})
+            </h2>
+            <div className="space-y-2">
+              {roomPlayers.length === 0 ? (
+                <p className="text-yellow-100/40 text-sm text-center">No players yet</p>
+              ) : (
+                roomPlayers.map((player) => (
+                  <div
+                    key={player.id}
+                    className="bg-black/60 rounded-lg p-3 border border-yellow-700/50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-yellow-200 font-bold text-sm">
+                          {player.userName}
+                          {player.userId === user?.id && (
+                            <span className="ml-2 text-xs text-yellow-400">(You)</span>
+                          )}
+                          {player.userId === room?.hostId && (
+                            <span className="ml-2 text-xs text-green-400">(Host)</span>
+                          )}
+                        </p>
+                        <p className="text-yellow-100/60 text-xs">
+                          {player.userEmail}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-yellow-200 font-bold text-sm">
+                          ${player.balance}
+                        </p>
+                        <p className={`text-xs font-semibold ${
+                          player.status === 'Active'
+                            ? 'text-green-400'
+                            : 'text-gray-400'
+                        }`}>
+                          {player.status}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Main Game Area */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Game State */}
-          <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-yellow-400 mb-4">Game Status</h2>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <p className="text-yellow-100/60 text-sm">Current Stage</p>
-                <p className="text-yellow-200 font-bold capitalize">{currentStage}</p>
-              </div>
-              <div>
-                <p className="text-yellow-100/60 text-sm">Your Balance</p>
-                <p className="text-yellow-200 font-bold">${user?.balance || 0}</p>
+        <div className="xl:col-span-2 overflow-y-auto">
+          <div className="space-y-3">
+          {/* Game State - Compact */}
+          <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-3">
+            <div className="flex justify-between items-center">
+              <div className="flex gap-6">
+                <div>
+                  <p className="text-yellow-100/60 text-xs">Stage</p>
+                  <p className="text-yellow-200 font-bold text-sm capitalize">{currentStage}</p>
+                </div>
+                <div>
+                  <p className="text-yellow-100/60 text-xs">Your Balance</p>
+                  <p className="text-yellow-200 font-bold text-sm">${user?.balance || 0}</p>
+                </div>
+                {gameConfig && (
+                  <>
+                    <div>
+                      <p className="text-yellow-100/60 text-xs">Min Bet</p>
+                      <p className="text-yellow-200 font-bold text-sm">${gameConfig.minBet}</p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
-
-            {gameConfig && (
-              <div className="bg-green-900/30 border border-green-700 rounded-lg p-4 mb-4">
-                <h3 className="text-yellow-300 font-bold mb-2">Game Config</h3>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <span className="text-yellow-100/60">Starting Balance:</span>
-                    <span className="text-yellow-200 ml-2 font-bold">
-                      ${gameConfig.startingBalance}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-yellow-100/60">Min Bet:</span>
-                    <span className="text-yellow-200 ml-2 font-bold">${gameConfig.minBet}</span>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Host Controls */}
             {isHost && gameNotStarted && (
@@ -541,11 +584,11 @@ export default function GameClient({ roomId }) {
 
           {/* Player Actions */}
           {room?.isActive && !gameNotStarted && (
-            <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-6">
-              <h2 className="text-xl font-bold text-yellow-400 mb-4">Player Actions</h2>
+            <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-4">
+              <h2 className="text-lg font-bold text-yellow-400 mb-3">Player Actions</h2>
 
               {currentStage === 'betting' && (
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {/* Player Balance */}
                   {roomPlayers.find(p => p.userId === user?.id) && (
                     <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-3">
@@ -647,25 +690,25 @@ export default function GameClient({ roomId }) {
               )}
 
               {currentStage === 'player_action' && (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {/* Dealer Hand */}
-                  <div className="bg-black/60 border border-yellow-700 rounded-lg p-4">
-                    <h3 className="text-yellow-400 font-bold mb-2">Dealer</h3>
-                    <div className="flex gap-3 flex-wrap">
+                  <div className="bg-black/60 border border-yellow-700 rounded-lg p-3">
+                    <h3 className="text-yellow-400 font-bold mb-2 text-sm">Dealer</h3>
+                    <div className="flex gap-2 flex-wrap">
                       {dealerHand.cards && dealerHand.cards.length > 0 ? (
                         dealerHand.cards.map((card, idx) => (
                           <div key={idx} className="relative">
                             {idx === 1 ? (
                               // Card back for hidden dealer card
-                              <div className="w-24 h-36 bg-gradient-to-br from-red-700 via-red-800 to-red-900 rounded-lg border-4 border-yellow-600 shadow-lg flex items-center justify-center">
-                                <div className="text-yellow-400 text-4xl font-bold">?</div>
+                              <div className="w-16 h-24 bg-gradient-to-br from-red-700 via-red-800 to-red-900 rounded-lg border-2 border-yellow-600 shadow-md flex items-center justify-center">
+                                <div className="text-yellow-400 text-2xl font-bold">?</div>
                               </div>
                             ) : (
                               // Show actual card image
                               <img
                                 src={card.image}
                                 alt={`${card.value} of ${card.suit}`}
-                                className="w-24 h-36 rounded-lg border-2 border-gray-700 shadow-lg object-cover"
+                                className="w-16 h-24 rounded-lg border-2 border-gray-700 shadow-md object-cover"
                               />
                             )}
                           </div>
@@ -676,36 +719,36 @@ export default function GameClient({ roomId }) {
                     </div>
                   </div>
 
-                  {/* Player Hands */}
-                  {roomPlayers.map((player) => {
+                  {/* Player Hands - Only show current user's hand */}
+                  {roomPlayers.filter(p => p.userId === user?.id).map((player) => {
                     const hand = playerHands[player.userId];
                     const isCurrentPlayer = gameState?.currentStage?.index !== undefined &&
                                           roomPlayers[gameState.currentStage.index]?.userId === player.userId;
 
                     return (
-                      <div key={player.userId} className={`bg-black/60 border rounded-lg p-4 ${
+                      <div key={player.userId} className={`bg-black/60 border rounded-lg p-3 ${
                         isCurrentPlayer ? 'border-green-500 border-2' : 'border-yellow-700'
                       }`}>
                         <div className="flex justify-between items-center mb-2">
-                          <h3 className={`font-bold ${isCurrentPlayer ? 'text-green-400' : 'text-yellow-400'}`}>
-                            {player.userName} {player.userId === user?.id && '(You)'}
-                            {isCurrentPlayer && <span className="ml-2 text-sm">&larr; Current Turn</span>}
+                          <h3 className={`font-bold text-sm ${isCurrentPlayer ? 'text-green-400' : 'text-yellow-400'}`}>
+                            Your Hand
+                            {isCurrentPlayer && <span className="ml-2 text-xs">&larr; Your Turn</span>}
                           </h3>
                           {hand && (
                             <div className="text-right">
-                              <div className="text-yellow-200 font-bold">Value: {hand.value}</div>
-                              {hand.bet > 0 && <div className="text-yellow-100/60 text-sm">Bet: ${hand.bet}</div>}
+                              <div className="text-yellow-200 font-bold text-sm">Value: {hand.value}</div>
+                              {hand.bet > 0 && <div className="text-yellow-100/60 text-xs">Bet: ${hand.bet}</div>}
                             </div>
                           )}
                         </div>
-                        <div className="flex gap-3 flex-wrap">
+                        <div className="flex gap-2 flex-wrap">
                           {hand && hand.cards && hand.cards.length > 0 ? (
                             hand.cards.map((card, idx) => (
                               <div key={idx} className="relative">
                                 <img
                                   src={card.image}
                                   alt={`${card.value} of ${card.suit}`}
-                                  className="w-24 h-36 rounded-lg border-2 border-gray-700 shadow-lg object-cover hover:scale-105 transition-transform duration-200"
+                                  className="w-16 h-24 rounded-lg border-2 border-gray-700 shadow-md object-cover hover:scale-105 transition-transform duration-200"
                                 />
                               </div>
                             ))
@@ -769,14 +812,14 @@ export default function GameClient({ roomId }) {
                         </div>
                       </div>
 
-                      {/* Player Results */}
-                      {roomPlayers.map((player) => {
+                      {/* Your Results - Only show current user's hand */}
+                      {roomPlayers.filter(p => p.userId === user?.id).map((player) => {
                         const hand = playerHands[player.userId];
                         return (
                           <div key={player.userId} className="bg-black/60 border border-yellow-700 rounded-lg p-4">
                             <div className="flex justify-between items-center mb-2">
                               <h3 className="text-yellow-400 font-bold">
-                                {player.userName} {player.userId === user?.id && '(You)'}
+                                Your Hand
                               </h3>
                               {hand && (
                                 <div className="text-right">
@@ -793,7 +836,7 @@ export default function GameClient({ roomId }) {
                                     <img
                                       src={card.image}
                                       alt={`${card.value} of ${card.suit}`}
-                                      className="w-24 h-36 rounded-lg border-2 border-gray-700 shadow-lg object-cover"
+                                      className="w-16 h-24 rounded-lg border-2 border-gray-700 shadow-md object-cover"
                                     />
                                   </div>
                                 ))
@@ -826,65 +869,15 @@ export default function GameClient({ roomId }) {
               )}
             </div>
           )}
+          </div>
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-4">
-          {/* Players List */}
-          <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-4">
-            <h2 className="text-xl font-bold text-yellow-400 mb-4">
-              Players ({roomPlayers.length}/{room?.maxPlayers || '?'})
-            </h2>
-            <div className="space-y-2">
-              {roomPlayers.length === 0 ? (
-                <p className="text-yellow-100/40 text-sm text-center">No players yet</p>
-              ) : (
-                roomPlayers.map((player) => (
-                  <div
-                    key={player.id}
-                    className="bg-black/60 rounded-lg p-3 border border-yellow-700/50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-yellow-200 font-bold text-sm">
-                          {player.userName}
-                          {player.userId === user?.id && (
-                            <span className="ml-2 text-xs text-yellow-400">(You)</span>
-                          )}
-                          {player.userId === room?.hostId && (
-                            <span className="ml-2 text-xs text-green-400">(Host)</span>
-                          )}
-                        </p>
-                        <p className="text-yellow-100/60 text-xs">
-                          {player.userEmail}
-                        </p>
-                        <p className="text-yellow-100/40 text-xs font-mono">
-                          ID: {player.userId.substring(0, 8)}...
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-yellow-200 font-bold text-sm">
-                          ${player.balance}
-                        </p>
-                        <p className={`text-xs font-semibold ${
-                          player.status === 'Active'
-                            ? 'text-green-400'
-                            : 'text-gray-400'
-                        }`}>
-                          {player.status}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
+        {/* Right Sidebar - Chat */}
+        <div className="xl:col-span-1 overflow-hidden">
           {/* Chat */}
-          <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-4">
-            <h2 className="text-xl font-bold text-yellow-400 mb-4">Chat</h2>
-            <div className="bg-black/60 rounded-lg p-3 h-64 overflow-y-auto mb-4">
+          <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-3 h-full flex flex-col">
+            <h2 className="text-lg font-bold text-yellow-400 mb-3">Chat</h2>
+            <div className="bg-black/60 rounded-lg p-2 overflow-y-auto mb-3 flex-1 min-h-0">
               {messages.length === 0 ? (
                 <p className="text-yellow-100/40 text-sm text-center">No messages yet</p>
               ) : (
@@ -911,16 +904,6 @@ export default function GameClient({ roomId }) {
               </button>
             </form>
           </div>
-
-          {/* Game State Debug */}
-          {gameState && (
-            <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-4">
-              <h2 className="text-xl font-bold text-yellow-400 mb-4">Debug Info</h2>
-              <pre className="text-yellow-100 text-xs overflow-auto max-h-64 bg-black/60 p-3 rounded">
-                {JSON.stringify(gameState, null, 2)}
-              </pre>
-            </div>
-          )}
         </div>
       </div>
     </div>
