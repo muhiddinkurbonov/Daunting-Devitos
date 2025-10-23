@@ -8,6 +8,7 @@ namespace Project.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // Require authentication for all endpoints
     public class UserController : ControllerBase
     {
         private readonly IUserRepository _userRepository;

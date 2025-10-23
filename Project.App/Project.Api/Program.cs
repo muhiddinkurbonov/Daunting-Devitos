@@ -45,7 +45,7 @@ public class Program
         // use extension methods to configure services
         builder.Services.AddDatabase(builder.Configuration);
         builder.Services.AddApplicationServices();
-        builder.Services.AddCorsPolicy();
+        builder.Services.AddCorsPolicy(builder.Configuration);
         builder.Services.AddAuth(builder.Configuration, builder.Environment);
 
         builder.Services.AddControllers();
@@ -86,7 +86,10 @@ public static class ProgramExtensions
     /// <summary>
     /// Applies the configuration for the CORS policy.
     /// </summary>
-    public static IServiceCollection AddCorsPolicy(this IServiceCollection services)
+    public static IServiceCollection AddCorsPolicy(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
         services.AddCors(options =>
         {
@@ -94,10 +97,12 @@ public static class ProgramExtensions
                 CorsPolicy,
                 policy =>
                 {
-                    // TODO: In production, read allowed origins from configuration
-                    // builder.Configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>()
+                    var allowedOrigins = configuration
+                        .GetSection("CorsSettings:AllowedOrigins")
+                        .Get<string[]>() ?? new[] { "http://localhost:3000" };
+
                     policy
-                        .WithOrigins("http://localhost:3000", "https://localhost:3000") // Next.js frontend
+                        .WithOrigins(allowedOrigins) // Read from configuration
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials(); // Required for cookies
@@ -135,6 +140,7 @@ public static class ProgramExtensions
         // singleton services
         services.AddHttpClient<IDeckApiService, DeckApiService>();
         services.AddSingleton<IRoomSSEService, RoomSSEService>();
+        services.AddHostedService<SSEShutdownService>();
 
         // scoped repositories
         services.AddScoped<IHandRepository, HandRepository>();

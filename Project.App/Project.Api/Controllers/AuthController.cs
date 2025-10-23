@@ -10,15 +10,26 @@ namespace Project.Api.Controllers;
 [Route("auth")]
 public class AuthController : ControllerBase
 {
+    private readonly ILogger<AuthController> _logger;
+    private readonly IConfiguration _configuration;
+
+    public AuthController(ILogger<AuthController> logger, IConfiguration configuration)
+    {
+        _logger = logger;
+        _configuration = configuration;
+    }
+
     // GET /auth/login
     [HttpGet("login")]
     [AllowAnonymous]
     public IActionResult Login([FromQuery] string? returnUrl = null)
     {
-        Console.WriteLine($"[AUTH] Login called with returnUrl: {returnUrl}");
+        _logger.LogInformation("[AUTH] Login called with returnUrl: {ReturnUrl}", returnUrl);
 
-        // Allow frontend URLs (localhost:3000 or your production frontend)
-        var allowedOrigins = new[] { "http://localhost:3000", "https://localhost:3000" };
+        // Allow frontend URLs from configuration
+        var allowedOrigins = _configuration
+            .GetSection("CorsSettings:AllowedOrigins")
+            .Get<string[]>() ?? Array.Empty<string>();
         var safe = "/swagger"; // default fallback
 
         if (!string.IsNullOrEmpty(returnUrl))
@@ -30,28 +41,28 @@ public class AuthController : ControllerBase
             )
             {
                 safe = returnUrl;
-                Console.WriteLine($"[AUTH] returnUrl accepted: {safe}");
+                _logger.LogInformation("[AUTH] returnUrl accepted: {Safe}", safe);
             }
             else
             {
-                Console.WriteLine($"[AUTH] returnUrl rejected, using fallback: {safe}");
+                _logger.LogWarning("[AUTH] returnUrl rejected, using fallback: {Safe}", safe);
             }
         }
         else
         {
-            Console.WriteLine($"[AUTH] No returnUrl provided, using fallback: {safe}");
+            _logger.LogInformation("[AUTH] No returnUrl provided, using fallback: {Safe}", safe);
         }
 
         if (User.Identity?.IsAuthenticated == true)
         {
-            Console.WriteLine($"[AUTH] User already authenticated, redirecting to: {safe}");
+            _logger.LogInformation("[AUTH] User already authenticated, redirecting to: {Safe}", safe);
             return Redirect(safe);
         }
 
         var props = new AuthenticationProperties { RedirectUri = safe };
         props.SetParameter("prompt", "select_account");
 
-        Console.WriteLine($"[AUTH] Challenging with RedirectUri: {safe}");
+        _logger.LogInformation("[AUTH] Challenging with RedirectUri: {Safe}", safe);
         return Challenge(props, GoogleDefaults.AuthenticationScheme);
     }
 

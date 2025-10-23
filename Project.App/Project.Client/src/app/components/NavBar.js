@@ -45,7 +45,8 @@ export default function NavBar() {
   } else if (pathname.startsWith('/rooms')) {
     links = [{ href: '/player/1', label: 'Profile' }];
   } else if (pathname.startsWith('/game/')) {
-    links = [{ href: '/rooms', label: 'Leave Room' }];
+    // No additional links in game view - leave button is in the game UI
+    links = [];
   }
 
   return (

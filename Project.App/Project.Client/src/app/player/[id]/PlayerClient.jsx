@@ -6,10 +6,10 @@ import AddCreditsModal from '../../components/AddCreditsModal';
 
 export default function PlayerClient({ _id, initialBalance }) {
   const router = useRouter();
-  const [playerName] = useState('Danny Devito');
+  const [playerName, setPlayerName] = useState('Danny Devito');
   const [balance, setBalance] = useState(initialBalance ?? 1000);
   const [showModal, setShowModal] = useState(false);
-  const [creditsToAdd, setCreditsToAdd] = useState('');
+  const [creditsToAdd, setCreditsToAdd] = useState(0);
 
   // Client-side auth guard
   useEffect(() => {
@@ -21,6 +21,7 @@ export default function PlayerClient({ _id, initialBalance }) {
         } else {
           res.json().then((data) => {
             console.log('Authenticated user:', data);
+            setPlayerName(data.name);
           });
         }
       })
@@ -35,7 +36,7 @@ export default function PlayerClient({ _id, initialBalance }) {
     const amount = parseFloat(creditsToAdd);
     if (!isNaN(amount) && amount > 0) {
       setBalance((prev) => prev + amount);
-      setCreditsToAdd('');
+      setCreditsToAdd(0);
       setShowModal(false);
       // Later: PATCH to backend with new balance for player {id}
     }
