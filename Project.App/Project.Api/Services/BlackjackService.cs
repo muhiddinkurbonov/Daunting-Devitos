@@ -89,6 +89,22 @@ public class BlackjackService(
         set => _config = value;
     }
 
+    // JSON serialization options with type discriminators for polymorphic types
+    private static readonly JsonSerializerOptions _gameStateJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = false,
+        TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver()
+    };
+
+    /// <summary>
+    /// Serialize game state with proper options to preserve type discriminators.
+    /// </summary>
+    private static string SerializeGameState(BlackjackState state)
+    {
+        return JsonSerializer.Serialize(state, _gameStateJsonOptions);
+    }
+
     public async Task<BlackjackState> GetGameStateAsync(Guid roomId)
     {
         string stateString = await _roomRepository.GetGameStateAsync(roomId);
@@ -148,7 +164,7 @@ public class BlackjackService(
 
                 // set bet in gamestate
                 stage.Bets[player.Id] = betAction.Amount;
-                await _roomRepository.UpdateGameStateAsync(roomId, JsonSerializer.Serialize(state));
+                await _roomRepository.UpdateGameStateAsync(roomId, SerializeGameState(state));
 
                 // update player status
                 player.Status = Status.Active;
@@ -184,7 +200,7 @@ public class BlackjackService(
                     DateTimeOffset.UtcNow + _config.TurnTimeLimit,
                     0
                 );
-                await _roomRepository.UpdateGameStateAsync(roomId, JsonSerializer.Serialize(state));
+                await _roomRepository.UpdateGameStateAsync(roomId, SerializeGameState(state));
 
                 break;
             case HitAction hitAction:
@@ -255,20 +271,28 @@ public class BlackjackService(
                 break;
             case DoubleAction doubleAction:
                 // Get player's hand
-                var doubleHands = await _handRepository.GetHandsByRoomIdAsync(player.Id)
+                var doubleHands =
+                    await _handRepository.GetHandsByRoomIdAsync(player.Id)
                     ?? throw new BadRequestException("No hand found for this player.");
-                var doubleHand = doubleHands.FirstOrDefault()
+                var doubleHand =
+                    doubleHands.FirstOrDefault()
                     ?? throw new BadRequestException("No hand found for this player.");
 
                 // Get room to access deck
-                var doubleRoom = await _roomRepository.GetByIdAsync(roomId)
+                var doubleRoom =
+                    await _roomRepository.GetByIdAsync(roomId)
                     ?? throw new BadRequestException("Room not found.");
 
                 // Verify this is the first turn (hand has exactly 2 cards)
-                var doubleCards = await _deckApiService.GetHandCards(doubleRoom.DeckId!, doubleHand.Id.ToString());
+                var doubleCards = await _deckApiService.GetHandCards(
+                    doubleRoom.DeckId!,
+                    doubleHand.Id.ToString()
+                );
                 if (doubleCards.Count != 2)
                 {
-                    throw new BadRequestException("Double down can only be done on the first turn with exactly 2 cards.");
+                    throw new BadRequestException(
+                        "Double down can only be done on the first turn with exactly 2 cards."
+                    );
                 }
 
                 // Check if player has enough chips to double their bet
@@ -292,20 +316,28 @@ public class BlackjackService(
                 break;
             case SplitAction splitAction:
                 // Get player's hand
-                var splitHands = await _handRepository.GetHandsByRoomIdAsync(player.Id)
+                var splitHands =
+                    await _handRepository.GetHandsByRoomIdAsync(player.Id)
                     ?? throw new BadRequestException("No hand found for this player.");
-                var splitHand = splitHands.FirstOrDefault()
+                var splitHand =
+                    splitHands.FirstOrDefault()
                     ?? throw new BadRequestException("No hand found for this player.");
 
                 // Get room to access deck
-                var splitRoom = await _roomRepository.GetByIdAsync(roomId)
+                var splitRoom =
+                    await _roomRepository.GetByIdAsync(roomId)
                     ?? throw new BadRequestException("Room not found.");
 
                 // Verify this is the first turn (hand has exactly 2 cards with same value)
-                var splitCards = await _deckApiService.GetHandCards(splitRoom.DeckId!, splitHand.Id.ToString());
+                var splitCards = await _deckApiService.GetHandCards(
+                    splitRoom.DeckId!,
+                    splitHand.Id.ToString()
+                );
                 if (splitCards.Count != 2)
                 {
-                    throw new BadRequestException("Split can only be done on the first turn with exactly 2 cards.");
+                    throw new BadRequestException(
+                        "Split can only be done on the first turn with exactly 2 cards."
+                    );
                 }
 
                 // Check if both cards have the same value
@@ -313,15 +345,18 @@ public class BlackjackService(
                 string value2 = splitCards[1].Value.ToUpper();
 
                 // Normalize face cards to "10"
-                int GetCardNumericValue(string val) => val switch
-                {
-                    "JACK" or "QUEEN" or "KING" => 10,
-                    _ => int.TryParse(val, out int v) ? v : (val == "ACE" ? 1 : 0)
-                };
+                int GetCardNumericValue(string val) =>
+                    val switch
+                    {
+                        "JACK" or "QUEEN" or "KING" => 10,
+                        _ => int.TryParse(val, out int v) ? v : (val == "ACE" ? 1 : 0),
+                    };
 
                 if (GetCardNumericValue(value1) != GetCardNumericValue(value2))
                 {
-                    throw new BadRequestException("Split can only be done when both cards have the same value.");
+                    throw new BadRequestException(
+                        "Split can only be done when both cards have the same value."
+                    );
                 }
 
                 // Check if player has enough chips for the new bet
@@ -341,7 +376,7 @@ public class BlackjackService(
                     Id = Guid.NewGuid(),
                     RoomPlayerId = player.Id,
                     Order = 1,
-                    Bet = splitHand.Bet
+                    Bet = splitHand.Bet,
                 };
                 await _handRepository.CreateHandAsync(secondHand);
 
@@ -358,7 +393,8 @@ public class BlackjackService(
                 break;
             case SurrenderAction surrenderAction:
                 // Get player's hands
-                var surrenderHands = await _handRepository.GetHandsByRoomIdAsync(player.Id)
+                var surrenderHands =
+                    await _handRepository.GetHandsByRoomIdAsync(player.Id)
                     ?? throw new BadRequestException("No hand found for this player.");
 
                 // Not allowed after splitting (player should only have one hand)
@@ -367,18 +403,25 @@ public class BlackjackService(
                     throw new BadRequestException("Surrender is not allowed after splitting.");
                 }
 
-                var surrenderHand = surrenderHands.FirstOrDefault()
+                var surrenderHand =
+                    surrenderHands.FirstOrDefault()
                     ?? throw new BadRequestException("No hand found for this player.");
 
                 // Get room to access deck
-                var surrenderRoom = await _roomRepository.GetByIdAsync(roomId)
+                var surrenderRoom =
+                    await _roomRepository.GetByIdAsync(roomId)
                     ?? throw new BadRequestException("Room not found.");
 
                 // Verify this is the first turn (hand has exactly 2 cards)
-                var surrenderCards = await _deckApiService.GetHandCards(surrenderRoom.DeckId!, surrenderHand.Id.ToString());
+                var surrenderCards = await _deckApiService.GetHandCards(
+                    surrenderRoom.DeckId!,
+                    surrenderHand.Id.ToString()
+                );
                 if (surrenderCards.Count != 2)
                 {
-                    throw new BadRequestException("Surrender can only be done on the first turn with exactly 2 cards.");
+                    throw new BadRequestException(
+                        "Surrender can only be done on the first turn with exactly 2 cards."
+                    );
                 }
 
                 // Refund half of player's bet
@@ -432,7 +475,7 @@ public class BlackjackService(
                     );
                     await _roomRepository.UpdateGameStateAsync(
                         roomId,
-                        JsonSerializer.Serialize(state)
+                        SerializeGameState(state)
                     );
                 }
                 else if (state.CurrentStage is BlackjackPlayerActionStage playerActionStage)
@@ -481,7 +524,7 @@ public class BlackjackService(
                 DateTimeOffset.UtcNow + _config.TurnTimeLimit,
                 nextIndex
             );
-            await _roomRepository.UpdateGameStateAsync(roomId, JsonSerializer.Serialize(state));
+            await _roomRepository.UpdateGameStateAsync(roomId, SerializeGameState(state));
         }
         else
         {
@@ -501,7 +544,7 @@ public class BlackjackService(
     {
         // Transition to finish round stage
         state.CurrentStage = new BlackjackFinishRoundStage();
-        await _roomRepository.UpdateGameStateAsync(roomId, JsonSerializer.Serialize(state));
+        await _roomRepository.UpdateGameStateAsync(roomId, SerializeGameState(state));
 
         // Get room to access deck ID
         var room =
@@ -515,9 +558,10 @@ public class BlackjackService(
 
         // Dealer's hidden card is already revealed (it's in state.DealerHand)
         // Now dealer plays - hit until 17 or higher
-        var dealerCards = state.DealerHand.Cast<JsonElement>().Select(je =>
-            JsonSerializer.Deserialize<CardDTO>(je.GetRawText())!
-        ).ToList();
+        var dealerCards = state
+            .DealerHand.Cast<JsonElement>()
+            .Select(je => JsonSerializer.Deserialize<CardDTO>(je.GetRawText())!)
+            .ToList();
 
         // Create dealer hand in deck API to draw more cards if needed
         var dealerHandId = Guid.NewGuid();
@@ -532,7 +576,7 @@ public class BlackjackService(
 
         // Update dealer hand in state
         state.DealerHand = dealerCards.Cast<object>().ToList();
-        await _roomRepository.UpdateGameStateAsync(roomId, JsonSerializer.Serialize(state));
+        await _roomRepository.UpdateGameStateAsync(roomId, SerializeGameState(state));
 
         int dealerValue = CalculateHandValue(dealerCards);
         bool dealerBusted = dealerValue > 21;
@@ -556,7 +600,10 @@ public class BlackjackService(
                 List<CardDTO> playerCards;
                 try
                 {
-                    playerCards = await _deckApiService.GetHandCards(room.DeckId, hand.Id.ToString());
+                    playerCards = await _deckApiService.GetHandCards(
+                        room.DeckId,
+                        hand.Id.ToString()
+                    );
                     if (!playerCards.Any())
                         continue;
                 }
@@ -634,7 +681,7 @@ public class BlackjackService(
         // Reset dealer hand for next round
         state.DealerHand = [];
 
-        await _roomRepository.UpdateGameStateAsync(roomId, JsonSerializer.Serialize(state));
+        await _roomRepository.UpdateGameStateAsync(roomId, SerializeGameState(state));
     }
 
     /// <summary>
@@ -671,7 +718,7 @@ public class BlackjackService(
                     Id = Guid.NewGuid(),
                     RoomPlayerId = player.Id,
                     Order = 0,
-                    Bet = 0
+                    Bet = 0,
                 };
                 await _handRepository.CreateHandAsync(hand);
 
@@ -692,7 +739,7 @@ public class BlackjackService(
         // Store dealer cards in state (first card is visible, second is hidden)
         state.DealerHand = dealerCards.Cast<object>().ToList();
 
-        await _roomRepository.UpdateGameStateAsync(roomId, JsonSerializer.Serialize(state));
+        await _roomRepository.UpdateGameStateAsync(roomId, SerializeGameState(state));
     }
 
     /// <summary>
@@ -742,9 +789,7 @@ public class BlackjackService(
             return false;
 
         bool hasAce = cards.Any(c => c.Value.ToUpper() == "ACE");
-        bool hasTen = cards.Any(c =>
-            c.Value.ToUpper() is "10" or "JACK" or "QUEEN" or "KING"
-        );
+        bool hasTen = cards.Any(c => c.Value.ToUpper() is "10" or "JACK" or "QUEEN" or "KING");
 
         return hasAce && hasTen;
     }

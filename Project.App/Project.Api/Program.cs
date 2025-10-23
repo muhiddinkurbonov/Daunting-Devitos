@@ -97,9 +97,9 @@ public static class ProgramExtensions
                 CorsPolicy,
                 policy =>
                 {
-                    var allowedOrigins = configuration
-                        .GetSection("CorsSettings:AllowedOrigins")
-                        .Get<string[]>() ?? new[] { "http://localhost:3000" };
+                    var allowedOrigins =
+                        configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>()
+                        ?? new[] { "http://localhost:3000" };
 
                     policy
                         .WithOrigins(allowedOrigins) // Read from configuration
@@ -174,8 +174,8 @@ public static class ProgramExtensions
             if (string.IsNullOrWhiteSpace(gid) || string.IsNullOrWhiteSpace(gsec))
             {
                 throw new InvalidOperationException(
-                    "Google OAuth config missing. Set Google:ClientId and Google:ClientSecret in " +
-                    "appsettings.json, user secrets, or environment variables (DAUNTING_Google__ClientId, DAUNTING_Google__ClientSecret)."
+                    "Google OAuth config missing. Set Google:ClientId and Google:ClientSecret in "
+                        + "appsettings.json, user secrets, or environment variables (DAUNTING_Google__ClientId, DAUNTING_Google__ClientSecret)."
                 );
             }
             Log.Information(
@@ -224,27 +224,66 @@ public static class ProgramExtensions
                 {
                     OnCreatingTicket = async ctx =>
                     {
-                        var email = ctx.User.GetProperty("email").GetString();
-                        var verified =
-                            ctx.User.TryGetProperty("email_verified", out var ev)
-                            && ev.GetBoolean();
-                        var name = ctx.User.TryGetProperty("name", out var n)
-                            ? n.GetString()
-                            : null;
-                        var picture = ctx.User.TryGetProperty("picture", out var p)
-                            ? p.GetString()
-                            : null;
+                        var logger = ctx.HttpContext.RequestServices.GetRequiredService<
+                            ILogger<Program>
+                        >();
+                        logger.LogInformation(
+                            "[OAuth] OnCreatingTicket fired - processing Google login"
+                        );
 
-                        if (string.IsNullOrWhiteSpace(email) || !verified)
+                        try
                         {
-                            ctx.Fail("Google email must be present and verified.");
-                            return;
-                        }
+                            var email = ctx.User.GetProperty("email").GetString();
+                            var verified =
+                                ctx.User.TryGetProperty("email_verified", out var ev)
+                                && ev.GetBoolean();
+                            var name = ctx.User.TryGetProperty("name", out var n)
+                                ? n.GetString()
+                                : null;
+                            var picture = ctx.User.TryGetProperty("picture", out var p)
+                                ? p.GetString()
+                                : null;
 
-                        var svc =
-                            ctx.HttpContext.RequestServices.GetRequiredService<IUserService>();
-                        await svc.UpsertGoogleUserByEmailAsync(email, name, picture);
-                    }
+                            logger.LogInformation(
+                                "[OAuth] Email: {Email}, Verified: {Verified}, Name: {Name}",
+                                email,
+                                verified,
+                                name
+                            );
+
+                            if (string.IsNullOrWhiteSpace(email) || !verified)
+                            {
+                                logger.LogWarning(
+                                    "[OAuth] Email validation failed - Email: {Email}, Verified: {Verified}",
+                                    email,
+                                    verified
+                                );
+                                ctx.Fail("Google email must be present and verified.");
+                                return;
+                            }
+
+                            var svc =
+                                ctx.HttpContext.RequestServices.GetRequiredService<IUserService>();
+                            logger.LogInformation(
+                                "[OAuth] Calling UpsertGoogleUserByEmailAsync for {Email}",
+                                email
+                            );
+                            await svc.UpsertGoogleUserByEmailAsync(email, name, picture);
+                            logger.LogInformation(
+                                "[OAuth] Successfully upserted user for {Email}",
+                                email
+                            );
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogError(
+                                ex,
+                                "[OAuth] Error in OnCreatingTicket: {Message}",
+                                ex.Message
+                            );
+                            throw;
+                        }
+                    },
                 };
             });
 

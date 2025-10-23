@@ -274,7 +274,16 @@ public class RoomService(
                     ),
                     DealerHand = [],
                 };
-                initialGameState = JsonSerializer.Serialize(blackjackState);
+
+                // Serialize with options to include type discriminators for polymorphism
+                var jsonOptions = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    WriteIndented = false,
+                    TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver()
+                };
+                initialGameState = JsonSerializer.Serialize(blackjackState, jsonOptions);
+                _logger.LogInformation("Serialized game state: {GameState}", initialGameState);
 
                 // Create empty hands in the deck for each player and the dealer
                 if (string.IsNullOrWhiteSpace(room.DeckId))
@@ -333,6 +342,15 @@ public class RoomService(
             ?? throw new InternalServerException("Failed to update room.");
 
         _logger.LogInformation("Successfully started game for room {RoomId}", roomId);
+
+        // Broadcast game started event to all players via SSE
+        await _roomSSEService.BroadcastEventAsync(
+            roomId,
+            "room_updated",
+            MapToResponseDto(updatedRoom)
+        );
+        _logger.LogInformation("Broadcasted game start for room {RoomId}", roomId);
+
         return MapToResponseDto(updatedRoom);
     }
 
@@ -507,11 +525,7 @@ public class RoomService(
             roomDto.MaxPlayers,
             roomDto.MinPlayers
         );
-        await _roomSSEService.BroadcastEventAsync(
-            roomId,
-            "room_updated",
-            roomDto
-        );
+        await _roomSSEService.BroadcastEventAsync(roomId, "room_updated", roomDto);
 
         // Return the updated room
         return roomDto;
@@ -610,10 +624,7 @@ public class RoomService(
             var remainingPlayers = await _roomPlayerRepository.GetByRoomIdAsync(roomId);
             if (!remainingPlayers.Any())
             {
-                _logger.LogInformation(
-                    "Room {RoomId} is now empty. Closing room.",
-                    roomId
-                );
+                _logger.LogInformation("Room {RoomId} is now empty. Closing room.", roomId);
                 room.IsActive = false;
                 room.EndedAt = DateTime.UtcNow;
                 await _roomRepository.UpdateAsync(room);
@@ -639,11 +650,7 @@ public class RoomService(
             roomDto.MaxPlayers,
             roomDto.IsActive
         );
-        await _roomSSEService.BroadcastEventAsync(
-            roomId,
-            "room_updated",
-            roomDto
-        );
+        await _roomSSEService.BroadcastEventAsync(roomId, "room_updated", roomDto);
 
         // Return the updated room
         return roomDto;

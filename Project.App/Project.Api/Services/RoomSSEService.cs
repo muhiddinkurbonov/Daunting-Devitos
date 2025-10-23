@@ -67,11 +67,15 @@ public class RoomSSEService : IRoomSSEService
         // Use camelCase naming to match ASP.NET Core controller responses
         var options = new JsonSerializerOptions
         {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         };
         string serializedData = JsonSerializer.Serialize(data, options);
-        Console.WriteLine($"[SSE] Broadcasting to room {roomId}: event={eventName}, data length={serializedData.Length}");
-        Console.WriteLine($"[SSE] Data preview: {serializedData.Substring(0, Math.Min(200, serializedData.Length))}...");
+        Console.WriteLine(
+            $"[SSE] Broadcasting to room {roomId}: event={eventName}, data length={serializedData.Length}"
+        );
+        Console.WriteLine(
+            $"[SSE] Data preview: {serializedData.Substring(0, Math.Min(200, serializedData.Length))}..."
+        );
 
         string eventPayload = $"event: {eventName}\ndata: {serializedData}\n\n";
         List<string> closedConnections = [];

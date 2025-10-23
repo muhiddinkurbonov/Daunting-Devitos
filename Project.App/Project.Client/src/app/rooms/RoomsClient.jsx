@@ -19,17 +19,18 @@ export default function RoomsClient() {
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
       // Check if user has an active room they're hosting or participating in
-      const response = await fetch(`${API_URL}/api/room`, {
+      // Only check ACTIVE rooms to avoid showing user as "in game" after leaving
+      const response = await fetch(`${API_URL}/api/room/active`, {
         credentials: 'include',
         cache: 'no-store',
       });
 
       if (response.ok) {
-        const allRooms = await response.json();
-        // Find rooms where user is either host or a player
+        const activeRooms = await response.json();
+        // Find active rooms where user is either host or a player
         const myRooms = [];
 
-        for (const room of allRooms) {
+        for (const room of activeRooms) {
           if (room.hostId === userId) {
             myRooms.push(room.id);
             continue;
@@ -39,10 +40,12 @@ export default function RoomsClient() {
           try {
             const playersRes = await fetch(`${API_URL}/api/room/${room.id}/players`, {
               credentials: 'include',
+              cache: 'no-store', // Ensure fresh data
             });
             if (playersRes.ok) {
               const players = await playersRes.json();
               if (players.some(p => p.userId === userId)) {
+                console.log(`[fetchUserRooms] User ${userId} is in room ${room.id}`);
                 myRooms.push(room.id);
               }
             }
@@ -51,6 +54,7 @@ export default function RoomsClient() {
           }
         }
 
+        console.log(`[fetchUserRooms] User rooms found:`, myRooms);
         setUserRooms(myRooms);
       }
     } catch (error) {
@@ -145,7 +149,24 @@ export default function RoomsClient() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || error.title || 'Failed to join room');
+        console.log('[JoinRoom] Error response:', error);
+        console.log('[JoinRoom] Status code:', response.status);
+
+        // If already in room (409 Conflict), just redirect to the room
+        if (response.status === 409) {
+          // Check both 'detail' and 'Detail' (case-insensitive)
+          const errorMsg = (error.detail || error.Detail || error.message || error.title || '').toLowerCase();
+          console.log('[JoinRoom] Conflict error message:', errorMsg);
+
+          // Check if error is about already being in the room
+          if (errorMsg.includes('already') || errorMsg.includes('player')) {
+            console.log('[JoinRoom] Already in room, redirecting...');
+            router.push(`/game/${roomId}`);
+            return;
+          }
+        }
+
+        throw new Error(error.detail || error.Detail || error.message || error.title || 'Failed to join room');
       }
 
       const updatedRoom = await response.json();

@@ -103,5 +103,33 @@ namespace Project.Api.Controllers
                 }
             );
         }
+
+        // PATCH: api/user/{id}/balance
+        [HttpPatch("{id}/balance")]
+        public async Task<IActionResult> UpdateBalance(Guid id, [FromBody] UpdateBalanceRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var existingUser = await _userRepository.GetByIdAsync(id);
+            if (existingUser == null)
+                return NotFound($"User with ID {id} not found.");
+
+            // Add the credits to the current balance
+            existingUser.Balance += request.Amount;
+
+            // Ensure balance doesn't go negative
+            if (existingUser.Balance < 0)
+                existingUser.Balance = 0;
+
+            await _userRepository.UpdateAsync(existingUser);
+
+            return Ok(new { balance = existingUser.Balance });
+        }
+    }
+
+    public class UpdateBalanceRequest
+    {
+        public double Amount { get; set; }
     }
 }

@@ -20,8 +20,7 @@ public class DeckApiService : IDeckApiService
     public DeckApiService(HttpClient client, IConfiguration configuration)
     {
         _httpClient = client;
-        _baseApiUrl = configuration["DeckApiSettings:BaseUrl"]
-            ?? "https://deckofcardsapi.com/api";
+        _baseApiUrl = configuration["DeckApiSettings:BaseUrl"] ?? "https://deckofcardsapi.com/api";
     }
 
     /// <summary>
@@ -145,8 +144,7 @@ public class DeckApiService : IDeckApiService
     /// <returns>true if successful</returns>
     private async Task<bool> AddToHand(string deckId, string handName, string cardCodes)
     {
-        string addToPileUrl =
-            $"{_baseApiUrl}/deck/{deckId}/pile/{handName}/add/?cards={cardCodes}";
+        string addToPileUrl = $"{_baseApiUrl}/deck/{deckId}/pile/{handName}/add/?cards={cardCodes}";
         var addResponse = await _httpClient.GetAsync(addToPileUrl);
         if (!addResponse.IsSuccessStatusCode)
         {

@@ -224,7 +224,7 @@ public class RoomController(
             role = p.Role.ToString(),
             status = p.Status.ToString(),
             balance = p.Balance,
-            balanceDelta = p.BalanceDelta
+            balanceDelta = p.BalanceDelta,
         });
         return Ok(playerDtos);
     }
@@ -238,6 +238,7 @@ public class RoomController(
     /// </summary>
     /// <param name="roomId"></param>
     /// <returns></returns>
+    [AllowAnonymous]
     [HttpGet("{roomId}/events")]
     public async Task GetRoomEvents(Guid roomId)
     {

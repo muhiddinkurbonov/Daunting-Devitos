@@ -24,11 +24,13 @@ export default function GameClient({ roomId }) {
     try {
       const playersRes = await fetch(`${API_URL}/api/room/${roomId}/players`, {
         credentials: 'include',
+        cache: 'no-store', // Force fresh data, no caching
       });
       if (playersRes.ok) {
         const playersData = await playersRes.json();
         console.log('[GameClient] Players fetched:', playersData);
         console.log('[GameClient] Player count:', playersData.length);
+        console.log('[GameClient] Player balances:', playersData.map(p => ({ id: p.userId, balance: p.balance })));
         setRoomPlayers(playersData);
       }
     } catch (e) {
@@ -70,6 +72,9 @@ export default function GameClient({ roomId }) {
         // Parse game state and config
         try {
           const parsedState = JSON.parse(roomData.gameState);
+          console.log('[GameClient] Parsed game state:', parsedState);
+          console.log('[GameClient] Current stage:', parsedState?.currentStage);
+          console.log('[GameClient] Stage $type:', parsedState?.currentStage?.$type);
           setGameState(parsedState);
         } catch (e) {
           console.error('Failed to parse game state:', e);
@@ -165,6 +170,7 @@ export default function GameClient({ roomId }) {
 
   const handleStartGame = async () => {
     try {
+      console.log('[StartGame] Starting game for room:', roomId);
       const response = await fetch(`${API_URL}/api/room/${roomId}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -178,16 +184,22 @@ export default function GameClient({ roomId }) {
       }
 
       const updatedRoom = await response.json();
+      console.log('[StartGame] Updated room received:', updatedRoom);
       setRoom(updatedRoom);
 
       if (updatedRoom.gameState) {
         const parsedState = JSON.parse(updatedRoom.gameState);
+        console.log('[StartGame] Parsed game state:', parsedState);
+        console.log('[StartGame] Current stage:', parsedState?.currentStage);
+        console.log('[StartGame] Stage $type:', parsedState?.currentStage?.$type);
         setGameState(parsedState);
+      } else {
+        console.warn('[StartGame] No game state in response');
       }
 
-      alert('Game started!');
+      console.log('[StartGame] Game started successfully');
     } catch (error) {
-      console.error('Error starting game:', error);
+      console.error('[StartGame] Error starting game:', error);
       alert(`Failed to start game: ${error.message}`);
     }
   };
@@ -196,6 +208,7 @@ export default function GameClient({ roomId }) {
     if (!user) return;
 
     try {
+      console.log(`[PlayerAction] Performing action: ${action}`, data);
       const response = await fetch(
         `${API_URL}/api/room/${roomId}/player/${user.id}/action`,
         {
@@ -211,7 +224,12 @@ export default function GameClient({ roomId }) {
         throw new Error(error.message || error.title || 'Failed to perform action');
       }
 
-      console.log('Action performed:', action);
+      console.log(`[PlayerAction] Action ${action} performed successfully`);
+
+      // Immediately refresh player data to show updated balances
+      // This supplements the SSE room_updated event for faster UI update
+      await fetchRoomPlayers();
+      console.log('[PlayerAction] Player data refreshed');
     } catch (error) {
       console.error('Error performing action:', error);
       alert(`Failed to perform action: ${error.message}`);
@@ -299,6 +317,14 @@ export default function GameClient({ roomId }) {
   const isHost = user && room && user.id === room.hostId;
   const currentStage = gameState?.currentStage?.$type || gameState?.currentStage?.type || 'unknown';
 
+  // Game has not started if there's no stage or it's in 'init' stage
+  const gameNotStarted = !gameState?.currentStage || currentStage === 'init' || currentStage === 'unknown';
+
+  // Debug logging
+  console.log('[GameClient] Render - gameState:', gameState);
+  console.log('[GameClient] Render - currentStage:', currentStage);
+  console.log('[GameClient] Render - gameNotStarted:', gameNotStarted);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 p-4 md:p-8">
       {/* Header */}
@@ -366,7 +392,7 @@ export default function GameClient({ roomId }) {
             )}
 
             {/* Host Controls */}
-            {isHost && !room?.isActive && (
+            {isHost && gameNotStarted && (
               <button
                 onClick={handleStartGame}
                 className="w-full py-3 bg-gradient-to-r from-green-400 via-green-500 to-green-600 text-black font-bold rounded-lg hover:from-green-500 hover:to-green-700 transition-all duration-200 border-2 border-green-700 shadow-md"
@@ -374,10 +400,19 @@ export default function GameClient({ roomId }) {
                 Start Game
               </button>
             )}
+
+            {/* Waiting for Host to Start */}
+            {!isHost && gameNotStarted && (
+              <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4 text-center">
+                <p className="text-blue-300">
+                  Waiting for host to start the game...
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Player Actions */}
-          {room?.isActive && (
+          {room?.isActive && !gameNotStarted && (
             <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-6">
               <h2 className="text-xl font-bold text-yellow-400 mb-4">Player Actions</h2>
 

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Project.Api.Services.Interface;
 
 namespace Project.Api.Controllers;
 
@@ -27,9 +28,9 @@ public class AuthController : ControllerBase
         _logger.LogInformation("[AUTH] Login called with returnUrl: {ReturnUrl}", returnUrl);
 
         // Allow frontend URLs from configuration
-        var allowedOrigins = _configuration
-            .GetSection("CorsSettings:AllowedOrigins")
-            .Get<string[]>() ?? Array.Empty<string>();
+        var allowedOrigins =
+            _configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>()
+            ?? Array.Empty<string>();
         var safe = "/swagger"; // default fallback
 
         if (!string.IsNullOrEmpty(returnUrl))
@@ -55,7 +56,10 @@ public class AuthController : ControllerBase
 
         if (User.Identity?.IsAuthenticated == true)
         {
-            _logger.LogInformation("[AUTH] User already authenticated, redirecting to: {Safe}", safe);
+            _logger.LogInformation(
+                "[AUTH] User already authenticated, redirecting to: {Safe}",
+                safe
+            );
             return Redirect(safe);
         }
 
@@ -89,4 +93,43 @@ public class AuthController : ControllerBase
             }
         );
     }
+
+    // POST /auth/debug/create-user - Temporary debug endpoint
+    [HttpPost("debug/create-user")]
+    [AllowAnonymous]
+    public async Task<IActionResult> DebugCreateUser(
+        [FromBody] CreateUserDebugRequest request,
+        [FromServices] IUserService userService
+    )
+    {
+        _logger.LogInformation("Debug: Creating/finding user with email {Email}", request.Email);
+
+        try
+        {
+            // Try to find existing user
+            var existingUser = await userService.GetByEmailAsync(request.Email);
+            if (existingUser != null)
+            {
+                _logger.LogInformation("Debug: User already exists with ID {UserId}", existingUser.Id);
+                return Ok(new { message = "User already exists", user = existingUser });
+            }
+
+            // Create new user
+            var user = await userService.UpsertGoogleUserByEmailAsync(
+                request.Email,
+                request.Name ?? request.Email,
+                null
+            );
+
+            _logger.LogInformation("Debug: User created with ID {UserId}", user.Id);
+            return Ok(new { message = "User created", user });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Debug: Error creating user");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
 }
+
+public record CreateUserDebugRequest(string Email, string? Name);
