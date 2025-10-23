@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Project.Api.Services.Interface;
 
 namespace Project.Api.Controllers;
 
@@ -10,15 +11,26 @@ namespace Project.Api.Controllers;
 [Route("auth")]
 public class AuthController : ControllerBase
 {
+    private readonly ILogger<AuthController> _logger;
+    private readonly IConfiguration _configuration;
+
+    public AuthController(ILogger<AuthController> logger, IConfiguration configuration)
+    {
+        _logger = logger;
+        _configuration = configuration;
+    }
+
     // GET /auth/login
     [HttpGet("login")]
     [AllowAnonymous]
     public IActionResult Login([FromQuery] string? returnUrl = null)
     {
-        Console.WriteLine($"[AUTH] Login called with returnUrl: {returnUrl}");
+        _logger.LogInformation("[AUTH] Login called with returnUrl: {ReturnUrl}", returnUrl);
 
-        // Allow frontend URLs (localhost:3000 or your production frontend)
-        var allowedOrigins = new[] { "http://localhost:3000", "https://localhost:3000" };
+        // Allow frontend URLs from configuration
+        var allowedOrigins =
+            _configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>()
+            ?? Array.Empty<string>();
         var safe = "/swagger"; // default fallback
 
         if (!string.IsNullOrEmpty(returnUrl))
@@ -30,28 +42,31 @@ public class AuthController : ControllerBase
             )
             {
                 safe = returnUrl;
-                Console.WriteLine($"[AUTH] returnUrl accepted: {safe}");
+                _logger.LogInformation("[AUTH] returnUrl accepted: {Safe}", safe);
             }
             else
             {
-                Console.WriteLine($"[AUTH] returnUrl rejected, using fallback: {safe}");
+                _logger.LogWarning("[AUTH] returnUrl rejected, using fallback: {Safe}", safe);
             }
         }
         else
         {
-            Console.WriteLine($"[AUTH] No returnUrl provided, using fallback: {safe}");
+            _logger.LogInformation("[AUTH] No returnUrl provided, using fallback: {Safe}", safe);
         }
 
         if (User.Identity?.IsAuthenticated == true)
         {
-            Console.WriteLine($"[AUTH] User already authenticated, redirecting to: {safe}");
+            _logger.LogInformation(
+                "[AUTH] User already authenticated, redirecting to: {Safe}",
+                safe
+            );
             return Redirect(safe);
         }
 
         var props = new AuthenticationProperties { RedirectUri = safe };
         props.SetParameter("prompt", "select_account");
 
-        Console.WriteLine($"[AUTH] Challenging with RedirectUri: {safe}");
+        _logger.LogInformation("[AUTH] Challenging with RedirectUri: {Safe}", safe);
         return Challenge(props, GoogleDefaults.AuthenticationScheme);
     }
 
@@ -78,4 +93,43 @@ public class AuthController : ControllerBase
             }
         );
     }
+
+    // POST /auth/debug/create-user - Temporary debug endpoint
+    [HttpPost("debug/create-user")]
+    [AllowAnonymous]
+    public async Task<IActionResult> DebugCreateUser(
+        [FromBody] CreateUserDebugRequest request,
+        [FromServices] IUserService userService
+    )
+    {
+        _logger.LogInformation("Debug: Creating/finding user with email {Email}", request.Email);
+
+        try
+        {
+            // Try to find existing user
+            var existingUser = await userService.GetByEmailAsync(request.Email);
+            if (existingUser != null)
+            {
+                _logger.LogInformation("Debug: User already exists with ID {UserId}", existingUser.Id);
+                return Ok(new { message = "User already exists", user = existingUser });
+            }
+
+            // Create new user
+            var user = await userService.UpsertGoogleUserByEmailAsync(
+                request.Email,
+                request.Name ?? request.Email,
+                null
+            );
+
+            _logger.LogInformation("Debug: User created with ID {UserId}", user.Id);
+            return Ok(new { message = "User created", user });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Debug: Error creating user");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
 }
+
+public record CreateUserDebugRequest(string Email, string? Name);

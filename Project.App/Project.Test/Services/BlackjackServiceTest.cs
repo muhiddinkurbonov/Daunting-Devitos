@@ -123,7 +123,16 @@ public class BlackjackServiceTest
         var gameState = new BlackjackState { CurrentStage = bettingStage };
         var gameStateString = JsonSerializer.Serialize(gameState);
 
+        var room = new Room
+        {
+            Id = roomId,
+            DeckId = "test-deck-123",
+            GameMode = "Blackjack",
+            GameState = "{}"
+        };
+
         _roomRepositoryMock.Setup(r => r.GetGameStateAsync(roomId)).ReturnsAsync(gameStateString);
+        _roomRepositoryMock.Setup(r => r.GetByIdAsync(roomId)).ReturnsAsync(room);
         _roomPlayerRepositoryMock
             .Setup(r => r.GetByRoomIdAndUserIdAsync(roomId, actingPlayerId))
             .ReturnsAsync(actingPlayer);
@@ -133,6 +142,15 @@ public class BlackjackServiceTest
         _roomPlayerRepositoryMock
             .Setup(r => r.GetByIdAsync(otherPlayer.Id))
             .ReturnsAsync(otherPlayer);
+        _roomPlayerRepositoryMock
+            .Setup(r => r.GetActivePlayersInRoomAsync(roomId))
+            .ReturnsAsync(new List<RoomPlayer> { actingPlayer, otherPlayer });
+        _deckApiServiceMock
+            .Setup(d => d.CreateEmptyHand(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+        _deckApiServiceMock
+            .Setup(d => d.DrawCards(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
+            .ReturnsAsync(new List<CardDTO>());
 
         // Act
         await _blackjackService.PerformActionAsync(

@@ -75,8 +75,9 @@ public class RoomSSEServiceTests
 
         var eventName = "player-joined";
         var eventData = new { PlayerId = "player123", Name = "John Doe" };
+        // JsonSerializer uses camelCase by default
         var expectedPayload =
-            $"event: {eventName}\ndata: {JsonSerializer.Serialize(eventData)}\n\n";
+            $"event: {eventName}\ndata: {{\"playerId\":\"player123\",\"name\":\"John Doe\"}}\n\n";
 
         // Act
         await sseService.BroadcastEventAsync(roomId1, eventName, eventData);
@@ -127,8 +128,9 @@ public class RoomSSEServiceTests
 
         var eventName = "test-event";
         var eventData = new { Message = "Hello" };
+        // JsonSerializer uses camelCase by default
         var expectedPayload =
-            $"event: {eventName}\ndata: {JsonSerializer.Serialize(eventData)}\n\n";
+            $"event: {eventName}\ndata: {{\"message\":\"Hello\"}}\n\n";
 
         // Act: first broadcast
         await sseService.BroadcastEventAsync(roomId, eventName, eventData);
@@ -149,8 +151,9 @@ public class RoomSSEServiceTests
 
         // Act: second broadcast
         var secondEventData = new { Message = "Still here?" };
+        // JsonSerializer uses camelCase by default
         var expectedPayload2 =
-            $"event: second-event\ndata: {JsonSerializer.Serialize(secondEventData)}\n\n";
+            $"event: second-event\ndata: {{\"message\":\"Still here?\"}}\n\n";
         await sseService.BroadcastEventAsync(roomId, "second-event", secondEventData);
 
         // Assert: only the open connection receives the second event

@@ -53,8 +53,8 @@ namespace Project.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DeckId")
-                        .HasColumnType("int");
+                    b.Property<string>("DeckId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
@@ -140,9 +140,11 @@ namespace Project.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RoomId");
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("RoomId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_RoomPlayer_RoomId_UserId_Unique");
 
                     b.ToTable("RoomPlayers");
                 });
@@ -171,6 +173,9 @@ namespace Project.Api.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });

@@ -6,38 +6,87 @@ import AddCreditsModal from '../../components/AddCreditsModal';
 
 export default function PlayerClient({ _id, initialBalance }) {
   const router = useRouter();
-  const [playerName] = useState('Danny Devito');
-  const [balance, setBalance] = useState(initialBalance ?? 1000);
+  const [playerName, setPlayerName] = useState('Danny Devito');
+  const [playerId, setPlayerId] = useState(null);
+  const [balance, setBalance] = useState(null); // Start with null to indicate loading
   const [showModal, setShowModal] = useState(false);
-  const [creditsToAdd, setCreditsToAdd] = useState('');
+  const [creditsToAdd, setCreditsToAdd] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingUser, setIsLoadingUser] = useState(true); // Track initial load
 
-  // Client-side auth guard
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
+
+  // Client-side auth guard and fetch user data
   useEffect(() => {
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
-    fetch(`${apiBaseUrl}/auth/me`, { credentials: 'include' })
+    setIsLoadingUser(true);
+    fetch(`${API_URL}/api/user/me`, { credentials: 'include' })
       .then((res) => {
         if (!res.ok) {
           router.replace('/login');
         } else {
-          res.json().then((data) => {
-            console.log('Authenticated user:', data);
-          });
+          return res.json();
+        }
+      })
+      .then((data) => {
+        if (data) {
+          console.log('Authenticated user:', data);
+          setPlayerName(data.name);
+          setPlayerId(data.id);
+          setBalance(data.balance);
         }
       })
       .catch((err) => {
         console.error('Auth check failed:', err);
         router.replace('/login');
+      })
+      .finally(() => {
+        setIsLoadingUser(false);
       });
-  }, [router]);
+  }, [router, API_URL]);
 
-  const handleAddCredits = (e) => {
+  const handleAddCredits = async (e) => {
     e.preventDefault();
     const amount = parseFloat(creditsToAdd);
-    if (!isNaN(amount) && amount > 0) {
-      setBalance((prev) => prev + amount);
-      setCreditsToAdd('');
+
+    if (!playerId) {
+      alert('Player ID not loaded. Please refresh the page.');
+      return;
+    }
+
+    if (isNaN(amount) || amount <= 0) {
+      alert('Please enter a valid amount greater than 0');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/user/${playerId}/balance`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ amount }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to add credits');
+      }
+
+      const data = await response.json();
+      console.log('Credits added successfully. New balance:', data.balance);
+
+      // Update local state with new balance from server
+      setBalance(data.balance);
+      setCreditsToAdd(0);
       setShowModal(false);
-      // Later: PATCH to backend with new balance for player {id}
+    } catch (error) {
+      console.error('Error adding credits:', error);
+      alert(`Failed to add credits: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -56,7 +105,11 @@ export default function PlayerClient({ _id, initialBalance }) {
         {/* Player Credits */}
         <div className="bg-black/50 rounded-lg p-4 mb-6 border border-yellow-600 max-w-xs w-full text-center">
           <p className="text-gray-300 text-sm mb-1">Current Credits</p>
-          <p className="text-3xl font-bold text-yellow-400">{balance} Devito Bucks</p>
+          {isLoadingUser ? (
+            <p className="text-3xl font-bold text-yellow-400">Loading...</p>
+          ) : (
+            <p className="text-3xl font-bold text-yellow-400">{balance ?? 0} Devito Bucks</p>
+          )}
         </div>
         {/* Add Credits Button */}
         <button
@@ -70,10 +123,11 @@ export default function PlayerClient({ _id, initialBalance }) {
       <AddCreditsModal
         isOpen={showModal}
         onClose={handleCloseModal}
-        balance={balance}
+        balance={balance ?? 0}
         creditsToAdd={creditsToAdd}
         setCreditsToAdd={setCreditsToAdd}
         onSubmit={handleAddCredits}
+        isLoading={isLoading}
       />
     </div>
   );
