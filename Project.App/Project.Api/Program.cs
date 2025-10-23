@@ -17,17 +17,27 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // use adminsetting.json as configuration
+        // Load configuration from multiple sources (in order of precedence):
+        // 1. appsettings.json (base configuration)
+        // 2. appsettings.{Environment}.json (environment-specific)
+        // 3. adminsetting.json (optional admin overrides)
+        // 4. Environment variables (highest priority, can override anything)
+        // 5. User secrets (for local development only)
         builder.Configuration.AddJsonFile(
             "adminsetting.json",
             optional: true,
             reloadOnChange: true
         );
+        builder.Configuration.AddEnvironmentVariables(prefix: "DAUNTING_");
 
-        // configure Serilog
+        // Configure Serilog with environment-aware settings
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
-            .WriteTo.Console()
+            .ReadFrom.Configuration(builder.Configuration)
+            .Enrich.FromLogContext()
+            .Enrich.WithProperty("Environment", builder.Environment.EnvironmentName)
+            .WriteTo.Console(
+                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}"
+            )
             .CreateLogger();
 
         builder.Host.UseSerilog();
@@ -42,20 +52,14 @@ public class Program
         builder.Services.AddOpenApi();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
+        builder.Services.AddHealthChecks();
 
         var app = builder.Build();
 
         app.UseMiddleware<GlobalExceptionHandler>();
 
-        // map default endpoint (shows connection string)
-        app.MapGet(
-            "/string",
-            () =>
-            {
-                var CS = builder.Configuration.GetConnectionString("DefaultConnection");
-                return Results.Ok(CS);
-            }
-        );
+        // Health check endpoint (useful for monitoring and load balancers)
+        app.MapHealthChecks("/health");
 
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
@@ -90,6 +94,8 @@ public static class ProgramExtensions
                 CorsPolicy,
                 policy =>
                 {
+                    // TODO: In production, read allowed origins from configuration
+                    // builder.Configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>()
                     policy
                         .WithOrigins("http://localhost:3000", "https://localhost:3000") // Next.js frontend
                         .AllowAnyHeader()
@@ -151,19 +157,23 @@ public static class ProgramExtensions
         IWebHostEnvironment environment
     )
     {
-        // sanity check for auth errors logging
+        // Validate required OAuth configuration
         if (!environment.IsEnvironment("Testing"))
         {
             var gid = configuration["Google:ClientId"];
             var gsec = configuration["Google:ClientSecret"];
+
+            // Allow environment variables to override config file
+            // e.g., DAUNTING_Google__ClientId, DAUNTING_Google__ClientSecret
             if (string.IsNullOrWhiteSpace(gid) || string.IsNullOrWhiteSpace(gsec))
             {
                 throw new InvalidOperationException(
-                    "Google OAuth config missing. Set Google:ClientId and Google:ClientSecret."
+                    "Google OAuth config missing. Set Google:ClientId and Google:ClientSecret in " +
+                    "appsettings.json, user secrets, or environment variables (DAUNTING_Google__ClientId, DAUNTING_Google__ClientSecret)."
                 );
             }
             Log.Information(
-                "Google ClientId (first 8): {ClientId}",
+                "Google OAuth configured. ClientId (first 8): {ClientId}",
                 gid?.Length >= 8 ? gid[..8] : gid
             );
         }
@@ -204,11 +214,11 @@ public static class ProgramExtensions
                 options.ClientId = configuration["Google:ClientId"]!; //  from secrets / config
                 options.ClientSecret = configuration["Google:ClientSecret"]!; //  from secrets / config
                 options.CallbackPath = "/auth/google/callback"; //  google redirects here after login if we change this we need to change it on google cloud as well!
-                //options.Events = new OAuthEvents
-                { //TEMPORARILY COMMENTED OUR BELOW BECAUSE IT WAS MESSING WITH GOOGLE AUTH LOGIN FOR SOME REASON GOTTA CHECK THIS LATER
-                    // OnCreatingTicket = async ctx => //currently we are accessing the user json that we get back from google oauth and using it as a quick validation check since email is our unique primary identified on users rn
-                    { /*
-                        var email = ctx.User.GetProperty("email").GetString(); //all of these checks are quick validation can be moved elsewhere when we decide where to put it
+                options.Events = new Microsoft.AspNetCore.Authentication.OAuth.OAuthEvents
+                {
+                    OnCreatingTicket = async ctx =>
+                    {
+                        var email = ctx.User.GetProperty("email").GetString();
                         var verified =
                             ctx.User.TryGetProperty("email_verified", out var ev)
                             && ev.GetBoolean();
@@ -228,10 +238,8 @@ public static class ProgramExtensions
                         var svc =
                             ctx.HttpContext.RequestServices.GetRequiredService<IUserService>();
                         await svc.UpsertGoogleUserByEmailAsync(email, name, picture);
-                    */
                     }
-                }
-                ;
+                };
             });
 
         services.AddAuthorization();
