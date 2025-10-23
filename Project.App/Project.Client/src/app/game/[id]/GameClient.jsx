@@ -17,6 +17,7 @@ export default function GameClient({ roomId }) {
   const [error, setError] = useState(null);
   const [playerHands, setPlayerHands] = useState({}); // { playerId: { cards: [], value: 0 } }
   const [dealerHand, setDealerHand] = useState({ cards: [], value: 0 });
+  const [showMobileChat, setShowMobileChat] = useState(false);
   const eventSourceRef = useRef(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
@@ -484,9 +485,9 @@ export default function GameClient({ roomId }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 max-h-[calc(100vh-14rem)] overflow-hidden">
-        {/* Left Sidebar - Players List */}
-        <div className="xl:col-span-1 overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 max-h-[calc(100vh-12rem)] overflow-hidden">
+        {/* Left Sidebar - Players List - Hidden on tablet, shown on desktop */}
+        <div className="hidden lg:block lg:col-span-1 overflow-hidden">
           {/* Players List */}
           <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-3 h-full overflow-y-auto">
             <h2 className="text-lg font-bold text-yellow-400 mb-3">
@@ -536,13 +537,13 @@ export default function GameClient({ roomId }) {
           </div>
         </div>
 
-        {/* Main Game Area */}
-        <div className="xl:col-span-2 overflow-y-auto">
-          <div className="space-y-3">
+        {/* Main Game Area - Takes full width on tablet, 2 cols on desktop */}
+        <div className="lg:col-span-2 overflow-y-auto">
+          <div className="space-y-2">
           {/* Game State - Compact */}
-          <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-3">
+          <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-2">
             <div className="flex justify-between items-center">
-              <div className="flex gap-6">
+              <div className="flex gap-3 md:gap-6 flex-wrap">
                 <div>
                   <p className="text-yellow-100/60 text-xs">Stage</p>
                   <p className="text-yellow-200 font-bold text-sm capitalize">{currentStage}</p>
@@ -584,8 +585,8 @@ export default function GameClient({ roomId }) {
 
           {/* Player Actions */}
           {room?.isActive && !gameNotStarted && (
-            <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-4">
-              <h2 className="text-lg font-bold text-yellow-400 mb-3">Player Actions</h2>
+            <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-2 md:p-3">
+              <h2 className="text-base md:text-lg font-bold text-yellow-400 mb-2">Player Actions</h2>
 
               {currentStage === 'betting' && (
                 <div className="space-y-2">
@@ -690,25 +691,25 @@ export default function GameClient({ roomId }) {
               )}
 
               {currentStage === 'player_action' && (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {/* Dealer Hand */}
-                  <div className="bg-black/60 border border-yellow-700 rounded-lg p-3">
-                    <h3 className="text-yellow-400 font-bold mb-2 text-sm">Dealer</h3>
-                    <div className="flex gap-2 flex-wrap">
+                  <div className="bg-black/60 border border-yellow-700 rounded-lg p-2">
+                    <h3 className="text-yellow-400 font-bold mb-1 text-xs md:text-sm">Dealer</h3>
+                    <div className="flex gap-1.5 flex-wrap">
                       {dealerHand.cards && dealerHand.cards.length > 0 ? (
                         dealerHand.cards.map((card, idx) => (
                           <div key={idx} className="relative">
                             {idx === 1 ? (
                               // Card back for hidden dealer card
-                              <div className="w-16 h-24 bg-gradient-to-br from-red-700 via-red-800 to-red-900 rounded-lg border-2 border-yellow-600 shadow-md flex items-center justify-center">
-                                <div className="text-yellow-400 text-2xl font-bold">?</div>
+                              <div className="w-12 h-18 md:w-16 md:h-24 bg-gradient-to-br from-red-700 via-red-800 to-red-900 rounded-md border-2 border-yellow-600 shadow-md flex items-center justify-center">
+                                <div className="text-yellow-400 text-xl md:text-2xl font-bold">?</div>
                               </div>
                             ) : (
                               // Show actual card image
                               <img
                                 src={card.image}
                                 alt={`${card.value} of ${card.suit}`}
-                                className="w-16 h-24 rounded-lg border-2 border-gray-700 shadow-md object-cover"
+                                className="w-12 h-18 md:w-16 md:h-24 rounded-md border-2 border-gray-700 shadow-sm object-cover"
                               />
                             )}
                           </div>
@@ -726,29 +727,29 @@ export default function GameClient({ roomId }) {
                                           roomPlayers[gameState.currentStage.index]?.userId === player.userId;
 
                     return (
-                      <div key={player.userId} className={`bg-black/60 border rounded-lg p-3 ${
+                      <div key={player.userId} className={`bg-black/60 border rounded-lg p-2 ${
                         isCurrentPlayer ? 'border-green-500 border-2' : 'border-yellow-700'
                       }`}>
-                        <div className="flex justify-between items-center mb-2">
-                          <h3 className={`font-bold text-sm ${isCurrentPlayer ? 'text-green-400' : 'text-yellow-400'}`}>
+                        <div className="flex justify-between items-center mb-1">
+                          <h3 className={`font-bold text-xs md:text-sm ${isCurrentPlayer ? 'text-green-400' : 'text-yellow-400'}`}>
                             Your Hand
-                            {isCurrentPlayer && <span className="ml-2 text-xs">&larr; Your Turn</span>}
+                            {isCurrentPlayer && <span className="ml-1 text-xs">&larr; Turn</span>}
                           </h3>
                           {hand && (
                             <div className="text-right">
-                              <div className="text-yellow-200 font-bold text-sm">Value: {hand.value}</div>
+                              <div className="text-yellow-200 font-bold text-xs md:text-sm">Value: {hand.value}</div>
                               {hand.bet > 0 && <div className="text-yellow-100/60 text-xs">Bet: ${hand.bet}</div>}
                             </div>
                           )}
                         </div>
-                        <div className="flex gap-2 flex-wrap">
+                        <div className="flex gap-1.5 flex-wrap">
                           {hand && hand.cards && hand.cards.length > 0 ? (
                             hand.cards.map((card, idx) => (
                               <div key={idx} className="relative">
                                 <img
                                   src={card.image}
                                   alt={`${card.value} of ${card.suit}`}
-                                  className="w-16 h-24 rounded-lg border-2 border-gray-700 shadow-md object-cover hover:scale-105 transition-transform duration-200"
+                                  className="w-12 h-18 md:w-16 md:h-24 rounded-md border-2 border-gray-700 shadow-sm object-cover hover:scale-105 transition-transform duration-200"
                                 />
                               </div>
                             ))
@@ -762,18 +763,18 @@ export default function GameClient({ roomId }) {
 
                   {/* Action Buttons - only enabled for current player */}
                   {roomPlayers[gameState?.currentStage?.index || 0]?.userId === user?.id && (
-                    <div className="flex gap-4 mt-4">
+                    <div className="flex gap-3 mt-2">
                       <button
                         onClick={handleHit}
-                        className="flex-1 py-3 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-bold rounded-lg hover:from-blue-500 hover:to-blue-700 transition-all duration-200 border-2 border-blue-700 shadow-md"
+                        className="flex-1 py-4 md:py-3 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-bold text-lg md:text-base rounded-lg hover:from-blue-500 hover:to-blue-700 transition-all duration-200 border-2 border-blue-700 shadow-lg"
                       >
-                        Hit
+                        HIT
                       </button>
                       <button
                         onClick={handleStand}
-                        className="flex-1 py-3 bg-gradient-to-r from-red-400 via-red-500 to-red-600 text-white font-bold rounded-lg hover:from-red-500 hover:to-red-700 transition-all duration-200 border-2 border-red-700 shadow-md"
+                        className="flex-1 py-4 md:py-3 bg-gradient-to-r from-red-400 via-red-500 to-red-600 text-white font-bold text-lg md:text-base rounded-lg hover:from-red-500 hover:to-red-700 transition-all duration-200 border-2 border-red-700 shadow-lg"
                       >
-                        Stand
+                        STAND
                       </button>
                     </div>
                   )}
@@ -872,8 +873,8 @@ export default function GameClient({ roomId }) {
           </div>
         </div>
 
-        {/* Right Sidebar - Chat */}
-        <div className="xl:col-span-1 overflow-hidden">
+        {/* Right Sidebar - Chat - Hidden on tablet, shown on desktop */}
+        <div className="hidden lg:block lg:col-span-1 overflow-hidden">
           {/* Chat */}
           <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-3 h-full flex flex-col">
             <h2 className="text-lg font-bold text-yellow-400 mb-3">Chat</h2>
@@ -906,6 +907,57 @@ export default function GameClient({ roomId }) {
           </div>
         </div>
       </div>
-    </div>
-  );
+
+      {/* Floating Chat Button for Mobile/Tablet */}
+      <button
+        onClick={() => setShowMobileChat(!showMobileChat)}
+        className="lg:hidden fixed bottom-4 right-4 w-14 h-14 bg-yellow-600 text-black rounded-full shadow-lg flex items-center justify-center font-bold text-xl z-50 hover:bg-yellow-700"
+      >
+        💬
+      </button>
+
+      {/* Mobile/Tablet Chat Overlay */}
+      {showMobileChat && (
+        <div className="lg:hidden fixed inset-0 bg-black/80 z-40 flex items-end">
+          <div className="bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 w-full max-h-[70vh] rounded-t-3xl border-t-4 border-yellow-600 flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b border-yellow-600">
+              <h2 className="text-xl font-bold text-yellow-400">Chat</h2>
+              <button
+                onClick={() => setShowMobileChat(false)}
+                className="text-yellow-400 text-2xl font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 bg-black/40">
+              {messages.length === 0 ? (
+                <p className="text-yellow-100/40 text-sm text-center">No messages yet</p>
+              ) : (
+                messages.map((msg, idx) => (
+                  <div key={idx} className="text-yellow-100 text-sm mb-2 bg-black/60 rounded p-2">
+                    {msg.data}
+                  </div>
+                ))
+              )}
+            </div>
+            <form onSubmit={handleSendMessage} className="p-4 bg-black/60 flex gap-2">
+              <input
+                type="text"
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                placeholder="Type a message..."
+                className="flex-1 px-4 py-3 rounded-lg bg-black/60 border-2 border-yellow-700 text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              />
+              <button
+                type="submit"
+                className="px-6 py-3 bg-yellow-600 text-black font-bold rounded-lg hover:bg-yellow-700"
+              >
+                Send
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+      </div>
+    );
 }
