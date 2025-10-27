@@ -8,6 +8,7 @@ using Project.Api.Services;
 using Project.Api.Services.Interface;
 using Project.Api.Utilities.Middleware;
 using Serilog;
+using Serilog.Events;
 
 namespace Project.Api;
 
@@ -37,6 +38,11 @@ public class Program
             .Enrich.WithProperty("Environment", builder.Environment.EnvironmentName)
             .WriteTo.Console(
                 outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}"
+            )
+            .WriteTo.File(
+                path: "Logs/app-log-.txt",
+                rollingInterval: RollingInterval.Day,
+                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
             )
             .CreateLogger();
 

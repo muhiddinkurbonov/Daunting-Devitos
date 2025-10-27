@@ -5,6 +5,9 @@ namespace Project.Api.Models.Games;
 public record BlackjackState : GameState<BlackjackStage>
 {
     public List<object> DealerHand { get; set; } = [];
+
+    // Dictionary mapping Hand ID (string) to list of cards
+    public Dictionary<string, List<object>> PlayerHands { get; set; } = new();
 }
 
 [JsonDerivedType(typeof(BlackjackInitStage), typeDiscriminator: "init")]

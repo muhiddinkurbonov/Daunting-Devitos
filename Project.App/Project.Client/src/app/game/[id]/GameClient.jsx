@@ -15,9 +15,104 @@ export default function GameClient({ roomId }) {
   const [betAmount, setBetAmount] = useState(10);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [playerHands, setPlayerHands] = useState({}); // { playerId: { cards: [], value: 0 } }
+  const [dealerHand, setDealerHand] = useState({ cards: [], value: 0 });
+  const [showMobileChat, setShowMobileChat] = useState(false);
   const eventSourceRef = useRef(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
+
+  // Calculate hand value from cards
+  const calculateHandValue = (cards) => {
+    if (!cards || cards.length === 0) return 0;
+
+    let total = 0;
+    let aces = 0;
+
+    cards.forEach(card => {
+      const value = card.value.toUpperCase();
+      if (value === 'ACE') {
+        aces++;
+        total += 11;
+      } else if (['KING', 'QUEEN', 'JACK'].includes(value)) {
+        total += 10;
+      } else {
+        total += parseInt(value);
+      }
+    });
+
+    // Adjust for aces
+    while (total > 21 && aces > 0) {
+      total -= 10;
+      aces--;
+    }
+
+    return total;
+  };
+
+  // Fetch player hands and cards
+  const fetchPlayerHands = async () => {
+    if (!roomPlayers || roomPlayers.length === 0 || !room?.deckId) return;
+
+    try {
+      const handsData = {};
+
+      for (const player of roomPlayers) {
+        // Fetch hands for this player
+        const handsRes = await fetch(`${API_URL}/api/rooms/${roomId}/hands/user/${player.userId}`, {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+
+        if (handsRes.ok) {
+          const hands = await handsRes.json();
+          console.log(`[fetchPlayerHands] Player ${player.userId} has ${hands.length} hands:`, hands);
+          if (hands && hands.length > 0) {
+            // Fetch cards for the first hand
+            const hand = hands[0];
+            console.log(`[fetchPlayerHands] Fetching cards for hand ${hand.id}`);
+            const cardsRes = await fetch(
+              `${API_URL}/api/rooms/${roomId}/hands/${hand.id}/cards`,
+              {
+                credentials: 'include',
+                cache: 'no-store'
+              }
+            );
+
+            if (cardsRes.ok) {
+              const cards = await cardsRes.json();
+              console.log(`[fetchPlayerHands] Got ${cards.length} cards for hand ${hand.id}:`, cards);
+              handsData[player.userId] = {
+                cards: cards || [],
+                value: calculateHandValue(cards || []),
+                bet: hand.bet
+              };
+            } else {
+              const errorText = await cardsRes.text();
+              console.error(`[fetchPlayerHands] Failed to fetch cards for hand ${hand.id}:`, cardsRes.status, errorText);
+            }
+          }
+        } else {
+          console.error(`[fetchPlayerHands] Failed to fetch hands for player ${player.userId}:`, handsRes.status);
+        }
+      }
+
+      setPlayerHands(handsData);
+    } catch (error) {
+      console.error('Error fetching player hands:', error);
+    }
+  };
+
+  // Fetch dealer hand from game state
+  const fetchDealerHand = () => {
+    if (gameState?.dealerHand && Array.isArray(gameState.dealerHand)) {
+      const cards = gameState.dealerHand;
+      setDealerHand({
+        cards: cards,
+        value: calculateHandValue(cards)
+      });
+    }
+  };
 
   // Fetch room players
   const fetchRoomPlayers = async () => {
@@ -168,6 +263,18 @@ export default function GameClient({ roomId }) {
     };
   }, [roomId, API_URL]);
 
+  // Fetch player hands and dealer hand when game state changes
+  useEffect(() => {
+    const currentStage = gameState?.currentStage?.$type || gameState?.currentStage?.type;
+    console.log('[GameClient] useEffect triggered. currentStage:', currentStage, 'roomPlayers:', roomPlayers?.length, 'room.deckId:', room?.deckId);
+
+    if (currentStage === 'player_action' || currentStage === 'finish_round') {
+      console.log('[GameClient] Fetching hands for stage:', currentStage);
+      fetchPlayerHands();
+      fetchDealerHand();
+    }
+  }, [gameState, roomPlayers, room]);
+
   const handleStartGame = async () => {
     try {
       console.log('[StartGame] Starting game for room:', roomId);
@@ -218,7 +325,7 @@ export default function GameClient({ roomId }) {
           body: JSON.stringify({ action, data }),
         }
       );
-
+      console.log(response);
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || error.title || 'Failed to perform action');
@@ -226,10 +333,12 @@ export default function GameClient({ roomId }) {
 
       console.log(`[PlayerAction] Action ${action} performed successfully`);
 
-      // Immediately refresh player data to show updated balances
+      // Immediately refresh player data and hands
       // This supplements the SSE room_updated event for faster UI update
       await fetchRoomPlayers();
-      console.log('[PlayerAction] Player data refreshed');
+      await fetchPlayerHands();
+      await fetchDealerHand();
+      console.log('[PlayerAction] Player data and hands refreshed');
     } catch (error) {
       console.error('Error performing action:', error);
       alert(`Failed to perform action: ${error.message}`);
@@ -251,7 +360,24 @@ export default function GameClient({ roomId }) {
   const handleLeaveRoom = async () => {
     if (!user) return;
 
+    // Check if game is active and show confirmation
+    const gameInProgress = room?.isActive && currentStage !== 'init' && currentStage !== 'unknown';
+
+    if (gameInProgress) {
+      const confirmLeave = window.confirm(
+        'The game is currently in progress. Are you sure you want to leave? Your bet and progress will be lost.'
+      );
+      if (!confirmLeave) return;
+    }
+
     try {
+      // Close SSE connection before leaving
+      if (eventSourceRef.current) {
+        console.log('[handleLeaveRoom] Closing SSE connection');
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+
       const response = await fetch(`${API_URL}/api/room/${roomId}/leave`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -264,6 +390,8 @@ export default function GameClient({ roomId }) {
         throw new Error(error.message || error.title || 'Failed to leave room');
       }
 
+      // Navigate back to lobby
+      console.log('[handleLeaveRoom] Successfully left room, returning to lobby');
       router.push('/rooms');
     } catch (error) {
       console.error('Error leaving room:', error);
@@ -348,48 +476,92 @@ export default function GameClient({ roomId }) {
             </div>
             <button
               onClick={handleLeaveRoom}
-              className="px-4 py-2 bg-red-600/80 text-white font-bold rounded-lg hover:bg-red-700 border-2 border-red-700"
+              className="px-4 py-2 bg-red-600/80 text-white font-bold rounded-lg hover:bg-red-700 border-2 border-red-700 transition-all duration-200"
+              title={room?.isActive && currentStage !== 'init' && currentStage !== 'unknown' ? 'Leave game (will forfeit)' : 'Return to lobby'}
             >
-              Leave
+              {room?.isActive && currentStage !== 'init' && currentStage !== 'unknown' ? 'Leave Game' : 'Back to Lobby'}
             </button>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Main Game Area */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Game State */}
-          <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-6">
-            <h2 className="text-xl font-bold text-yellow-400 mb-4">Game Status</h2>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <p className="text-yellow-100/60 text-sm">Current Stage</p>
-                <p className="text-yellow-200 font-bold capitalize">{currentStage}</p>
-              </div>
-              <div>
-                <p className="text-yellow-100/60 text-sm">Your Balance</p>
-                <p className="text-yellow-200 font-bold">${user?.balance || 0}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 max-h-[calc(100vh-12rem)] overflow-hidden">
+        {/* Left Sidebar - Players List - Hidden on tablet, shown on desktop */}
+        <div className="hidden lg:block lg:col-span-1 overflow-hidden">
+          {/* Players List */}
+          <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-3 h-full overflow-y-auto">
+            <h2 className="text-lg font-bold text-yellow-400 mb-3">
+              Players ({roomPlayers.length}/{room?.maxPlayers || '?'})
+            </h2>
+            <div className="space-y-2">
+              {roomPlayers.length === 0 ? (
+                <p className="text-yellow-100/40 text-sm text-center">No players yet</p>
+              ) : (
+                roomPlayers.map((player) => (
+                  <div
+                    key={player.id}
+                    className="bg-black/60 rounded-lg p-3 border border-yellow-700/50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-yellow-200 font-bold text-sm">
+                          {player.userName}
+                          {player.userId === user?.id && (
+                            <span className="ml-2 text-xs text-yellow-400">(You)</span>
+                          )}
+                          {player.userId === room?.hostId && (
+                            <span className="ml-2 text-xs text-green-400">(Host)</span>
+                          )}
+                        </p>
+                        <p className="text-yellow-100/60 text-xs">
+                          {player.userEmail}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-yellow-200 font-bold text-sm">
+                          ${player.balance}
+                        </p>
+                        <p className={`text-xs font-semibold ${
+                          player.status === 'Active'
+                            ? 'text-green-400'
+                            : 'text-gray-400'
+                        }`}>
+                          {player.status}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Main Game Area - Takes full width on tablet, 2 cols on desktop */}
+        <div className="lg:col-span-2 overflow-y-auto">
+          <div className="space-y-2">
+          {/* Game State - Compact */}
+          <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-2">
+            <div className="flex justify-between items-center">
+              <div className="flex gap-3 md:gap-6 flex-wrap">
+                <div>
+                  <p className="text-yellow-100/60 text-xs">Stage</p>
+                  <p className="text-yellow-200 font-bold text-sm capitalize">{currentStage}</p>
+                </div>
+                <div>
+                  <p className="text-yellow-100/60 text-xs">Your Balance</p>
+                  <p className="text-yellow-200 font-bold text-sm">${user?.balance || 0}</p>
+                </div>
+                {gameConfig && (
+                  <>
+                    <div>
+                      <p className="text-yellow-100/60 text-xs">Min Bet</p>
+                      <p className="text-yellow-200 font-bold text-sm">${gameConfig.minBet}</p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
-
-            {gameConfig && (
-              <div className="bg-green-900/30 border border-green-700 rounded-lg p-4 mb-4">
-                <h3 className="text-yellow-300 font-bold mb-2">Game Config</h3>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <span className="text-yellow-100/60">Starting Balance:</span>
-                    <span className="text-yellow-200 ml-2 font-bold">
-                      ${gameConfig.startingBalance}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-yellow-100/60">Min Bet:</span>
-                    <span className="text-yellow-200 ml-2 font-bold">${gameConfig.minBet}</span>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Host Controls */}
             {isHost && gameNotStarted && (
@@ -413,11 +585,11 @@ export default function GameClient({ roomId }) {
 
           {/* Player Actions */}
           {room?.isActive && !gameNotStarted && (
-            <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-6">
-              <h2 className="text-xl font-bold text-yellow-400 mb-4">Player Actions</h2>
+            <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-2 md:p-3">
+              <h2 className="text-base md:text-lg font-bold text-yellow-400 mb-2">Player Actions</h2>
 
               {currentStage === 'betting' && (
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {/* Player Balance */}
                   {roomPlayers.find(p => p.userId === user?.id) && (
                     <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-3">
@@ -486,9 +658,16 @@ export default function GameClient({ roomId }) {
                   {/* Place Bet Button */}
                   <button
                     onClick={handlePlaceBet}
-                    className="w-full py-3 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black font-bold rounded-lg hover:from-yellow-500 hover:to-yellow-700 transition-all duration-200 border-2 border-yellow-700 shadow-md"
+                    disabled={gameState?.currentStage?.bets && Object.keys(gameState.currentStage.bets).some(id => {
+                      const player = roomPlayers.find(p => p.id === id);
+                      return player?.userId === user?.id;
+                    })}
+                    className="w-full py-3 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black font-bold rounded-lg hover:from-yellow-500 hover:to-yellow-700 transition-all duration-200 border-2 border-yellow-700 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Place Bet ${betAmount}
+                    {gameState?.currentStage?.bets && Object.keys(gameState.currentStage.bets).some(id => {
+                      const player = roomPlayers.find(p => p.id === id);
+                      return player?.userId === user?.id;
+                    }) ? 'Bet Placed - Waiting for Others' : `Place Bet $${betAmount}`}
                   </button>
 
                   {/* Show who has bet */}
@@ -512,88 +691,194 @@ export default function GameClient({ roomId }) {
               )}
 
               {currentStage === 'player_action' && (
-                <div className="flex gap-4">
-                  <button
-                    onClick={handleHit}
-                    className="flex-1 py-3 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-bold rounded-lg hover:from-blue-500 hover:to-blue-700 transition-all duration-200 border-2 border-blue-700 shadow-md"
-                  >
-                    Hit
-                  </button>
-                  <button
-                    onClick={handleStand}
-                    className="flex-1 py-3 bg-gradient-to-r from-red-400 via-red-500 to-red-600 text-white font-bold rounded-lg hover:from-red-500 hover:to-red-700 transition-all duration-200 border-2 border-red-700 shadow-md"
-                  >
-                    Stand
-                  </button>
+                <div className="space-y-2">
+                  {/* Dealer Hand */}
+                  <div className="bg-black/60 border border-yellow-700 rounded-lg p-2">
+                    <h3 className="text-yellow-400 font-bold mb-1 text-xs md:text-sm">Dealer</h3>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {dealerHand.cards && dealerHand.cards.length > 0 ? (
+                        dealerHand.cards.map((card, idx) => (
+                          <div key={idx} className="relative">
+                            {idx === 1 ? (
+                              // Card back for hidden dealer card
+                              <div className="w-12 h-18 md:w-16 md:h-24 bg-gradient-to-br from-red-700 via-red-800 to-red-900 rounded-md border-2 border-yellow-600 shadow-md flex items-center justify-center">
+                                <div className="text-yellow-400 text-xl md:text-2xl font-bold">?</div>
+                              </div>
+                            ) : (
+                              // Show actual card image
+                              <img
+                                src={card.image}
+                                alt={`${card.value} of ${card.suit}`}
+                                className="w-12 h-18 md:w-16 md:h-24 rounded-md border-2 border-gray-700 shadow-sm object-cover"
+                              />
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-yellow-100/40 text-sm">No cards</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Player Hands - Only show current user's hand */}
+                  {roomPlayers.filter(p => p.userId === user?.id).map((player) => {
+                    const hand = playerHands[player.userId];
+                    const isCurrentPlayer = gameState?.currentStage?.index !== undefined &&
+                                          roomPlayers[gameState.currentStage.index]?.userId === player.userId;
+
+                    return (
+                      <div key={player.userId} className={`bg-black/60 border rounded-lg p-2 ${
+                        isCurrentPlayer ? 'border-green-500 border-2' : 'border-yellow-700'
+                      }`}>
+                        <div className="flex justify-between items-center mb-1">
+                          <h3 className={`font-bold text-xs md:text-sm ${isCurrentPlayer ? 'text-green-400' : 'text-yellow-400'}`}>
+                            Your Hand
+                            {isCurrentPlayer && <span className="ml-1 text-xs">&larr; Turn</span>}
+                          </h3>
+                          {hand && (
+                            <div className="text-right">
+                              <div className="text-yellow-200 font-bold text-xs md:text-sm">Value: {hand.value}</div>
+                              {hand.bet > 0 && <div className="text-yellow-100/60 text-xs">Bet: ${hand.bet}</div>}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {hand && hand.cards && hand.cards.length > 0 ? (
+                            hand.cards.map((card, idx) => (
+                              <div key={idx} className="relative">
+                                <img
+                                  src={card.image}
+                                  alt={`${card.value} of ${card.suit}`}
+                                  className="w-12 h-18 md:w-16 md:h-24 rounded-md border-2 border-gray-700 shadow-sm object-cover hover:scale-105 transition-transform duration-200"
+                                />
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-yellow-100/40 text-sm">No cards</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Action Buttons - only enabled for current player */}
+                  {roomPlayers[gameState?.currentStage?.index || 0]?.userId === user?.id && (
+                    <div className="flex gap-3 mt-2">
+                      <button
+                        onClick={handleHit}
+                        className="flex-1 py-4 md:py-3 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white font-bold text-lg md:text-base rounded-lg hover:from-blue-500 hover:to-blue-700 transition-all duration-200 border-2 border-blue-700 shadow-lg"
+                      >
+                        HIT
+                      </button>
+                      <button
+                        onClick={handleStand}
+                        className="flex-1 py-4 md:py-3 bg-gradient-to-r from-red-400 via-red-500 to-red-600 text-white font-bold text-lg md:text-base rounded-lg hover:from-red-500 hover:to-red-700 transition-all duration-200 border-2 border-red-700 shadow-lg"
+                      >
+                        STAND
+                      </button>
+                    </div>
+                  )}
+
+                  {roomPlayers[gameState?.currentStage?.index || 0]?.userId !== user?.id && (
+                    <p className="text-yellow-100/60 text-center mt-4">
+                      Waiting for {roomPlayers[gameState?.currentStage?.index || 0]?.userName || 'player'} to make a move...
+                    </p>
+                  )}
                 </div>
               )}
 
-              {!['betting', 'player_action'].includes(currentStage) && (
-                <p className="text-yellow-100/60 text-center">
-                  Waiting for game to progress...
-                </p>
+              {!['betting', 'player_action'].includes(currentStage) && currentStage !== 'init' && currentStage !== 'unknown' && (
+                <div className="space-y-4">
+                  {currentStage === 'finish_round' ? (
+                    <>
+                      <h2 className="text-xl font-bold text-yellow-400 text-center mb-4">Round Complete!</h2>
+
+                      {/* Dealer Final Hand */}
+                      <div className="bg-black/60 border border-yellow-700 rounded-lg p-4">
+                        <h3 className="text-yellow-400 font-bold mb-2">Dealer - Final Hand (Value: {dealerHand.value})</h3>
+                        <div className="flex gap-3 flex-wrap">
+                          {dealerHand.cards && dealerHand.cards.length > 0 ? (
+                            dealerHand.cards.map((card, idx) => (
+                              <div key={idx} className="relative">
+                                <img
+                                  src={card.image}
+                                  alt={`${card.value} of ${card.suit}`}
+                                  className="w-24 h-36 rounded-lg border-2 border-gray-700 shadow-lg object-cover"
+                                />
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-yellow-100/40 text-sm">No cards</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Your Results - Only show current user's hand */}
+                      {roomPlayers.filter(p => p.userId === user?.id).map((player) => {
+                        const hand = playerHands[player.userId];
+                        return (
+                          <div key={player.userId} className="bg-black/60 border border-yellow-700 rounded-lg p-4">
+                            <div className="flex justify-between items-center mb-2">
+                              <h3 className="text-yellow-400 font-bold">
+                                Your Hand
+                              </h3>
+                              {hand && (
+                                <div className="text-right">
+                                  <div className="text-yellow-200 font-bold">Value: {hand.value}</div>
+                                  {hand.bet > 0 && <div className="text-yellow-100/60 text-sm">Bet: ${hand.bet}</div>}
+                                  <div className="text-green-400 font-bold">Balance: ${player.balance}</div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex gap-3 flex-wrap">
+                              {hand && hand.cards && hand.cards.length > 0 ? (
+                                hand.cards.map((card, idx) => (
+                                  <div key={idx} className="relative">
+                                    <img
+                                      src={card.image}
+                                      alt={`${card.value} of ${card.suit}`}
+                                      className="w-16 h-24 rounded-lg border-2 border-gray-700 shadow-md object-cover"
+                                    />
+                                  </div>
+                                ))
+                              ) : (
+                                <p className="text-yellow-100/40 text-sm">No cards</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4 text-center">
+                        <p className="text-blue-300 mb-4">
+                          Check your updated balance above!
+                        </p>
+                        <button
+                          onClick={() => router.push('/rooms')}
+                          className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 border-2 border-blue-700"
+                        >
+                          Back to Lobby
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-yellow-100/60 text-center">
+                      Waiting for game to progress...
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           )}
+          </div>
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-4">
-          {/* Players List */}
-          <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-4">
-            <h2 className="text-xl font-bold text-yellow-400 mb-4">
-              Players ({roomPlayers.length}/{room?.maxPlayers || '?'})
-            </h2>
-            <div className="space-y-2">
-              {roomPlayers.length === 0 ? (
-                <p className="text-yellow-100/40 text-sm text-center">No players yet</p>
-              ) : (
-                roomPlayers.map((player) => (
-                  <div
-                    key={player.id}
-                    className="bg-black/60 rounded-lg p-3 border border-yellow-700/50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-yellow-200 font-bold text-sm">
-                          {player.userName}
-                          {player.userId === user?.id && (
-                            <span className="ml-2 text-xs text-yellow-400">(You)</span>
-                          )}
-                          {player.userId === room?.hostId && (
-                            <span className="ml-2 text-xs text-green-400">(Host)</span>
-                          )}
-                        </p>
-                        <p className="text-yellow-100/60 text-xs">
-                          {player.userEmail}
-                        </p>
-                        <p className="text-yellow-100/40 text-xs font-mono">
-                          ID: {player.userId.substring(0, 8)}...
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-yellow-200 font-bold text-sm">
-                          ${player.balance}
-                        </p>
-                        <p className={`text-xs font-semibold ${
-                          player.status === 'Active'
-                            ? 'text-green-400'
-                            : 'text-gray-400'
-                        }`}>
-                          {player.status}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
+        {/* Right Sidebar - Chat - Hidden on tablet, shown on desktop */}
+        <div className="hidden lg:block lg:col-span-1 overflow-hidden">
           {/* Chat */}
-          <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-4">
-            <h2 className="text-xl font-bold text-yellow-400 mb-4">Chat</h2>
-            <div className="bg-black/60 rounded-lg p-3 h-64 overflow-y-auto mb-4">
+          <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-3 h-full flex flex-col">
+            <h2 className="text-lg font-bold text-yellow-400 mb-3">Chat</h2>
+            <div className="bg-black/60 rounded-lg p-2 overflow-y-auto mb-3 flex-1 min-h-0">
               {messages.length === 0 ? (
                 <p className="text-yellow-100/40 text-sm text-center">No messages yet</p>
               ) : (
@@ -620,18 +905,59 @@ export default function GameClient({ roomId }) {
               </button>
             </form>
           </div>
-
-          {/* Game State Debug */}
-          {gameState && (
-            <div className="bg-black/80 border-2 border-yellow-600 rounded-xl p-4">
-              <h2 className="text-xl font-bold text-yellow-400 mb-4">Debug Info</h2>
-              <pre className="text-yellow-100 text-xs overflow-auto max-h-64 bg-black/60 p-3 rounded">
-                {JSON.stringify(gameState, null, 2)}
-              </pre>
-            </div>
-          )}
         </div>
       </div>
-    </div>
-  );
+
+      {/* Floating Chat Button for Mobile/Tablet */}
+      <button
+        onClick={() => setShowMobileChat(!showMobileChat)}
+        className="lg:hidden fixed bottom-4 right-4 w-14 h-14 bg-yellow-600 text-black rounded-full shadow-lg flex items-center justify-center font-bold text-xl z-50 hover:bg-yellow-700"
+      >
+        💬
+      </button>
+
+      {/* Mobile/Tablet Chat Overlay */}
+      {showMobileChat && (
+        <div className="lg:hidden fixed inset-0 bg-black/80 z-40 flex items-end">
+          <div className="bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 w-full max-h-[70vh] rounded-t-3xl border-t-4 border-yellow-600 flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b border-yellow-600">
+              <h2 className="text-xl font-bold text-yellow-400">Chat</h2>
+              <button
+                onClick={() => setShowMobileChat(false)}
+                className="text-yellow-400 text-2xl font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 bg-black/40">
+              {messages.length === 0 ? (
+                <p className="text-yellow-100/40 text-sm text-center">No messages yet</p>
+              ) : (
+                messages.map((msg, idx) => (
+                  <div key={idx} className="text-yellow-100 text-sm mb-2 bg-black/60 rounded p-2">
+                    {msg.data}
+                  </div>
+                ))
+              )}
+            </div>
+            <form onSubmit={handleSendMessage} className="p-4 bg-black/60 flex gap-2">
+              <input
+                type="text"
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                placeholder="Type a message..."
+                className="flex-1 px-4 py-3 rounded-lg bg-black/60 border-2 border-yellow-700 text-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              />
+              <button
+                type="submit"
+                className="px-6 py-3 bg-yellow-600 text-black font-bold rounded-lg hover:bg-yellow-700"
+              >
+                Send
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+      </div>
+    );
 }

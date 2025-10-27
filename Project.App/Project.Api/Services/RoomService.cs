@@ -15,6 +15,7 @@ namespace Project.Api.Services;
 public class RoomService(
     IRoomRepository roomRepository,
     IRoomPlayerRepository roomPlayerRepository,
+    IHandRepository handRepository,
     IBlackjackService blackjackService,
     IDeckApiService deckApiService,
     IRoomSSEService roomSSEService,
@@ -24,6 +25,7 @@ public class RoomService(
 {
     private readonly IRoomRepository _roomRepository = roomRepository;
     private readonly IRoomPlayerRepository _roomPlayerRepository = roomPlayerRepository;
+    private readonly IHandRepository _handRepository = handRepository;
     private readonly IBlackjackService _blackjackService = blackjackService;
     private readonly IDeckApiService _deckApiService = deckApiService;
     private readonly IRoomSSEService _roomSSEService = roomSSEService;
@@ -246,6 +248,21 @@ public class RoomService(
                     config = new BlackjackConfig();
                     finalGameConfig = JsonSerializer.Serialize(config);
                     _logger.LogInformation("Using default config for room {RoomId}", roomId);
+                }
+
+                // Delete any old hands from previous games
+                try
+                {
+                    var oldHands = await _handRepository.GetHandsByRoomIdAsync(roomId);
+                    foreach (var oldHand in oldHands)
+                    {
+                        await _handRepository.DeleteHandAsync(oldHand.Id);
+                    }
+                    _logger.LogInformation("Deleted {HandCount} old hands from room {RoomId}", oldHands.Count, roomId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "No old hands to delete or error deleting hands for room {RoomId}", roomId);
                 }
 
                 // Batch update all players in the room
