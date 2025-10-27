@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { roomService } from '@/lib/api';
 
 export default function CreateGameForm({ userId, onRoomCreated }) {
   const router = useRouter();
@@ -42,8 +43,6 @@ export default function CreateGameForm({ userId, onRoomCreated }) {
     setIsCreating(true);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
-
       // Create initial game state for Blackjack
       const initialGameState = JSON.stringify({
         currentStage: {
@@ -60,32 +59,17 @@ export default function CreateGameForm({ userId, onRoomCreated }) {
         turnTimeLimit: '00:00:30' // 30 seconds
       });
 
-      const response = await fetch(`${API_URL}/api/room`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          hostId: userId,
-          description: description,
-          isPublic: true,
-          gameMode: 'Blackjack',
-          gameState: initialGameState,
-          gameConfig: gameConfig,
-          maxPlayers: maxPlayers,
-          minPlayers: 1,
-          deckId: '',
-        }),
+      const room = await roomService.createRoom({
+        hostId: userId,
+        description: description,
+        isPublic: true,
+        gameMode: 'Blackjack',
+        gameState: initialGameState,
+        gameConfig: gameConfig,
+        maxPlayers: maxPlayers,
+        minPlayers: 1,
+        deckId: '',
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('Server error response:', error);
-        throw new Error(error.message || error.title || 'Failed to create room');
-      }
-
-      const room = await response.json();
 
       // Refresh the rooms list
       if (onRoomCreated) {
@@ -96,7 +80,7 @@ export default function CreateGameForm({ userId, onRoomCreated }) {
       router.push(`/game/${room.id}`);
     } catch (error) {
       console.error('Error creating room:', error);
-      setFormError(error.message);
+      setFormError(error.response?.data?.message || error.message);
       setIsCreating(false);
     }
   };

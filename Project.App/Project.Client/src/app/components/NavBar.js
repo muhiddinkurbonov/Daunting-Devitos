@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { authService } from '@/lib/api';
 
 export default function NavBar() {
   const pathname = usePathname();
@@ -10,24 +11,9 @@ export default function NavBar() {
     console.log('[NavBar] Logout clicked');
 
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
-      console.log('[NavBar] Calling logout endpoint:', `${apiBaseUrl}/auth/logout`);
-
-      const response = await fetch(`${apiBaseUrl}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-
-      console.log('[NavBar] Logout response status:', response.status);
-
-      if (response.ok) {
-        console.log('[NavBar] Logout successful, redirecting to /login');
-        window.location.href = '/login';
-      } else {
-        console.error('[NavBar] Logout failed with status:', response.status);
-        // Redirect anyway to force re-authentication
-        window.location.href = '/login';
-      }
+      await authService.logout();
+      console.log('[NavBar] Logout successful, redirecting to /login');
+      window.location.href = '/login';
     } catch (error) {
       console.error('[NavBar] Logout error:', error);
       // Redirect anyway to force re-authentication
@@ -35,11 +21,7 @@ export default function NavBar() {
     }
   };
 
-  let links = [
-    // TODO: Replace '/player/1' with the real logged-in player's id when auth is wired up
-    // { href: '/player/1', label: 'Profile' },
-    // { href: '/rooms', label: 'Rooms'},
-  ];
+  let links = [];
   if (pathname.startsWith('/player/')) {
     links = [{ href: '/rooms', label: 'Rooms' }];
   } else if (pathname.startsWith('/rooms')) {
@@ -75,37 +57,3 @@ export default function NavBar() {
     </nav>
   );
 }
-
-// src/components/NavBar.jsx
-// export default function NavBar({ route, onNavigate, onLogout, role }) {
-//   return (
-//     <nav className="app-navbar" aria-label="Primary">
-//       <button
-//         className="app-nav-btn"
-//         onClick={() => onNavigate("profile")}
-//         aria-current={route === "profile" ? "page" : undefined}
-//       >
-//         Profile
-//       </button>
-//       <button
-//         className="app-nav-btn"
-//         onClick={() => onNavigate("games")}
-//         aria-current={route === "games" ? "page" : undefined}
-//       >
-//         Games
-//       </button>
-
-//       {role === "admin" && (
-//         <button
-//           className="app-nav-btn"
-//           onClick={() => onNavigate("admin")}
-//           aria-current={route === "admin" ? "page" : undefined}
-//         >
-//           Admin
-//         </button>
-//       )}
-
-//       <button className="app-nav-btn" onClick={onLogout}>Logout</button>
-//     </nav>
-//   );
-// }

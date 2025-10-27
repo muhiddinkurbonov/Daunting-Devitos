@@ -1,22 +1,19 @@
 'use client';
 
+import { API_BASE_URL } from '@/lib/api/client';
+
 export default function Login() {
-  // Click handler for "Sign in with Google"
   const handleGoogleSignIn = () => {
-    console.log('Google sign-in clicked');
+    console.log('[Login] Google sign-in clicked');
 
-    // API base HTTPS in dev. Set NEXT_PUBLIC_API_URL in .env.local, else fallback.
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
+    const returnUrl = `${window.location.origin}/rooms`;
 
-    // Where to land in the SPA after successful login
-    const returnUrl = `${window.location.origin}/rooms`; // e.g., http://localhost:3000/rooms
+    console.log('[Login] API Base URL:', API_BASE_URL);
+    console.log('[Login] Return URL:', returnUrl);
+    console.log('[Login] Full login URL:', `${API_BASE_URL}/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`);
 
-    console.log('API Base URL:', apiBaseUrl);
-    console.log('Return URL:', returnUrl);
-    console.log('Full login URL:', `${apiBaseUrl}/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`);
-
-    // Send the browser to your backend auth endpoint with a safe returnUrl
-    window.location.href = `${apiBaseUrl}/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`;
+    // Redirect to backend auth endpoint
+    window.location.href = `${API_BASE_URL}/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`;
   };
 
   return (
