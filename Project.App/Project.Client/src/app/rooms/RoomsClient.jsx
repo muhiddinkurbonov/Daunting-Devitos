@@ -3,60 +3,46 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import CreateGameForm from '../components/CreateGameForm';
+import { roomService } from '@/lib/api';
+import { parseGameConfig } from '@/lib/utils/blackjack';
+import { useAuth } from '@/lib/hooks';
 
 export default function RoomsClient() {
   const router = useRouter();
-  const [userId, setUserId] = useState(null);
+  const { user, loading: authLoading } = useAuth();
   const [rooms, setRooms] = useState([]);
   const [joiningRoomId, setJoiningRoomId] = useState(null);
   const [isLoadingRooms, setIsLoadingRooms] = useState(true);
-  const [userRooms, setUserRooms] = useState([]); // Rooms the user is already in
+  const [userRooms, setUserRooms] = useState([]);
 
   // Fetch rooms the user is already in
   const fetchUserRooms = async () => {
-    if (!userId) return;
+    if (!user?.id) return;
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
-      // Check if user has an active room they're hosting or participating in
-      // Only check ACTIVE rooms to avoid showing user as "in game" after leaving
-      const response = await fetch(`${API_URL}/api/room/active`, {
-        credentials: 'include',
-        cache: 'no-store',
-      });
+      const activeRooms = await roomService.getActiveRooms();
+      const myRooms = [];
 
-      if (response.ok) {
-        const activeRooms = await response.json();
-        // Find active rooms where user is either host or a player
-        const myRooms = [];
-
-        for (const room of activeRooms) {
-          if (room.hostId === userId) {
-            myRooms.push(room.id);
-            continue;
-          }
-
-          // Check if user is a player in this room
-          try {
-            const playersRes = await fetch(`${API_URL}/api/room/${room.id}/players`, {
-              credentials: 'include',
-              cache: 'no-store', // Ensure fresh data
-            });
-            if (playersRes.ok) {
-              const players = await playersRes.json();
-              if (players.some(p => p.userId === userId)) {
-                console.log(`[fetchUserRooms] User ${userId} is in room ${room.id}`);
-                myRooms.push(room.id);
-              }
-            }
-          } catch (e) {
-            console.error('Error checking room players:', e);
-          }
+      for (const room of activeRooms) {
+        if (room.hostId === user.id) {
+          myRooms.push(room.id);
+          continue;
         }
 
-        console.log(`[fetchUserRooms] User rooms found:`, myRooms);
-        setUserRooms(myRooms);
+        // Check if user is a player in this room
+        try {
+          const players = await roomService.getRoomPlayers(room.id);
+          if (players.some(p => p.userId === user.id)) {
+            console.log(`[fetchUserRooms] User ${user.id} is in room ${room.id}`);
+            myRooms.push(room.id);
+          }
+        } catch (e) {
+          console.error('Error checking room players:', e);
+        }
       }
+
+      console.log(`[fetchUserRooms] User rooms found:`, myRooms);
+      setUserRooms(myRooms);
     } catch (error) {
       console.error('Error fetching user rooms:', error);
     }
@@ -65,19 +51,10 @@ export default function RoomsClient() {
   // Fetch rooms
   const handleRefreshRooms = async () => {
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
-      const response = await fetch(`${API_URL}/api/room/public`, {
-        credentials: 'include',
-        cache: 'no-store',
-      });
-
-      if (response.ok) {
-        const updatedRooms = await response.json();
-        // Filter to only show active rooms (extra safety check)
-        const activeRooms = updatedRooms.filter(room => room.isActive);
-        setRooms(activeRooms);
-        setIsLoadingRooms(false);
-      }
+      const updatedRooms = await roomService.getPublicRooms();
+      const activeRooms = updatedRooms.filter(room => room.isActive);
+      setRooms(activeRooms);
+      setIsLoadingRooms(false);
 
       // Also fetch user's rooms
       await fetchUserRooms();
@@ -88,45 +65,25 @@ export default function RoomsClient() {
   };
 
   useEffect(() => {
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
-    console.log('[RoomsClient] Checking authentication...');
-
-    fetch(`${apiBaseUrl}/api/user/me`, { credentials: 'include' })
-      .then((res) => {
-        console.log('[RoomsClient] Auth response status:', res.status);
-        if (!res.ok) {
-          console.log('[RoomsClient] Not authenticated, redirecting to /login');
-          router.replace('/login');
-        } else {
-          return res.json();
-        }
-      })
-      .then((data) => {
-        if (data) {
-          console.log('[RoomsClient] ✅ Authenticated as:', data.name);
-          console.log('[RoomsClient] Full user data:', data);
-          setUserId(data.id);
-          // Fetch rooms after authentication
-          handleRefreshRooms();
-        }
-      })
-      .catch((err) => {
-        console.error('[RoomsClient] Auth check failed:', err);
-        router.replace('/login');
-      });
-  }, [router]);
+    if (user?.id) {
+      console.log('[RoomsClient] ✅ Authenticated as:', user.name);
+      handleRefreshRooms();
+    }
+  }, [user]);
 
   // Auto-refresh rooms every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      handleRefreshRooms();
+      if (user?.id) {
+        handleRefreshRooms();
+      }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const handleJoinRoom = async (roomId) => {
-    if (!userId) {
+    if (!user?.id) {
       alert('Please log in first');
       return;
     }
@@ -134,62 +91,43 @@ export default function RoomsClient() {
     setJoiningRoomId(roomId);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
-
-      const response = await fetch(`${API_URL}/api/room/${roomId}/join`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          userId: userId,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.log('[JoinRoom] Error response:', error);
-        console.log('[JoinRoom] Status code:', response.status);
-
-        // If already in room (409 Conflict), just redirect to the room
-        if (response.status === 409) {
-          // Check both 'detail' and 'Detail' (case-insensitive)
-          const errorMsg = (error.detail || error.Detail || error.message || error.title || '').toLowerCase();
-          console.log('[JoinRoom] Conflict error message:', errorMsg);
-
-          // Check if error is about already being in the room
-          if (errorMsg.includes('already') || errorMsg.includes('player')) {
-            console.log('[JoinRoom] Already in room, redirecting...');
-            router.push(`/game/${roomId}`);
-            return;
-          }
-        }
-
-        throw new Error(error.detail || error.Detail || error.message || error.title || 'Failed to join room');
-      }
-
-      const updatedRoom = await response.json();
-      console.log('Successfully joined room:', updatedRoom);
-
-      // Redirect to the game room
+      await roomService.joinRoom(roomId);
+      console.log('Successfully joined room');
       router.push(`/game/${roomId}`);
     } catch (error) {
       console.error('Error joining room:', error);
-      alert(`Failed to join room: ${error.message}`);
+
+      // If already in room (409 Conflict), just redirect to the room
+      if (error.response?.status === 409) {
+        const errorMsg = (error.response?.data?.detail || error.response?.data?.Detail || error.message || '').toLowerCase();
+        console.log('[JoinRoom] Conflict error message:', errorMsg);
+
+        if (errorMsg.includes('already') || errorMsg.includes('player')) {
+          console.log('[JoinRoom] Already in room, redirecting...');
+          router.push(`/game/${roomId}`);
+          return;
+        }
+      }
+
+      alert(`Failed to join room: ${error.response?.data?.detail || error.message}`);
       setJoiningRoomId(null);
     }
   };
 
   // Parse game config to get min bet
   const getMinBet = (room) => {
-    try {
-      const config = JSON.parse(room.gameConfig);
-      return config.minBet || 0;
-    } catch {
-      return 0;
-    }
+    const config = parseGameConfig(room.gameConfig);
+    return config?.minBet || 0;
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 flex items-center justify-center">
+        <div className="text-yellow-100 text-2xl">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-emerald-900 p-8 flex flex-col md:flex-row gap-8 relative overflow-hidden">
       <div className="flex-1 max-w-lg relative z-10">
@@ -276,7 +214,7 @@ export default function RoomsClient() {
         )}
       </div>
       <div className="flex-1 flex flex-col items-start md:items-end relative z-10">
-        {userId && <CreateGameForm userId={userId} onRoomCreated={handleRefreshRooms} />}
+        {user && <CreateGameForm userId={user.id} onRoomCreated={handleRefreshRooms} />}
       </div>
     </div>
   );

@@ -1,9 +1,18 @@
 #!/bin/bash
+ENV_FILE="./.env" 
 
+# Check if the .env file exists
+if [ -f "$ENV_FILE" ]; then
+    # Source the file to load the variables into the current environment
+    source "$ENV_FILE" 
+else
+    echo "Error: .env file not found at $ENV_FILE"
+    exit 1
+fi
 # Configuration
 CONTAINER_NAME="mssql-express"
-SA_PASSWORD="YourStrong@Passw0rd"
-MSSQL_PORT=1433
+SA_PASSWORD=$DB_PASSWORD
+MSSQL_PORT=$DB_PORT
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -53,10 +62,6 @@ echo ""
 echo -e "${GREEN}==================================${NC}"
 echo -e "${GREEN}SQL Server Express is running!${NC}"
 echo -e "${GREEN}==================================${NC}"
-echo -e "Server: ${YELLOW}localhost,$MSSQL_PORT${NC}"
-echo -e "Username: ${YELLOW}sa${NC}"
-echo -e "Password: ${YELLOW}$SA_PASSWORD${NC}"
-echo -e "Connection String: ${YELLOW}Server=localhost,$MSSQL_PORT;User Id=sa;Password=$SA_PASSWORD;TrustServerCertificate=True;${NC}"
 echo ""
 echo -e "To stop: ${YELLOW}docker stop $CONTAINER_NAME${NC}"
 echo -e "To remove: ${YELLOW}docker rm $CONTAINER_NAME${NC}"

@@ -1,54 +1,29 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import AddCreditsModal from '../../components/AddCreditsModal';
+import { useAuth } from '@/lib/hooks';
+import { userService } from '@/lib/api';
 
 export default function PlayerClient({ _id, initialBalance }) {
-  const router = useRouter();
-  const [playerName, setPlayerName] = useState('Danny Devito');
-  const [playerId, setPlayerId] = useState(null);
-  const [balance, setBalance] = useState(null); // Start with null to indicate loading
+  const { user, loading: isLoadingUser } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [creditsToAdd, setCreditsToAdd] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingUser, setIsLoadingUser] = useState(true); // Track initial load
+  const [balance, setBalance] = useState(user?.balance || null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7069';
-
-  // Client-side auth guard and fetch user data
-  useEffect(() => {
-    setIsLoadingUser(true);
-    fetch(`${API_URL}/api/user/me`, { credentials: 'include' })
-      .then((res) => {
-        if (!res.ok) {
-          router.replace('/login');
-        } else {
-          return res.json();
-        }
-      })
-      .then((data) => {
-        if (data) {
-          console.log('Authenticated user:', data);
-          setPlayerName(data.name);
-          setPlayerId(data.id);
-          setBalance(data.balance);
-        }
-      })
-      .catch((err) => {
-        console.error('Auth check failed:', err);
-        router.replace('/login');
-      })
-      .finally(() => {
-        setIsLoadingUser(false);
-      });
-  }, [router, API_URL]);
+  // Update balance when user data changes
+  useState(() => {
+    if (user?.balance !== undefined) {
+      setBalance(user.balance);
+    }
+  }, [user]);
 
   const handleAddCredits = async (e) => {
     e.preventDefault();
     const amount = parseFloat(creditsToAdd);
 
-    if (!playerId) {
+    if (!user?.id) {
       alert('Player ID not loaded. Please refresh the page.');
       return;
     }
@@ -61,30 +36,15 @@ export default function PlayerClient({ _id, initialBalance }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/user/${playerId}/balance`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ amount }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to add credits');
-      }
-
-      const data = await response.json();
+      const data = await userService.addCredits(user.id, amount);
       console.log('Credits added successfully. New balance:', data.balance);
 
-      // Update local state with new balance from server
       setBalance(data.balance);
       setCreditsToAdd(0);
       setShowModal(false);
     } catch (error) {
       console.error('Error adding credits:', error);
-      alert(`Failed to add credits: ${error.message}`);
+      alert(`Failed to add credits: ${error.response?.data?.message || error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +60,7 @@ export default function PlayerClient({ _id, initialBalance }) {
       <div className="flex flex-col items-center justify-center w-full max-w-md mx-auto">
         {/* Player Name */}
         <h1 className="text-4xl font-bold bg-gradient-to-b from-yellow-400 via-yellow-500 to-yellow-600 bg-clip-text text-transparent mb-4 text-center">
-          {playerName}
+          {user?.name || 'Loading...'}
         </h1>
         {/* Player Credits */}
         <div className="bg-black/50 rounded-lg p-4 mb-6 border border-yellow-600 max-w-xs w-full text-center">
